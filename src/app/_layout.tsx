@@ -7,7 +7,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/nunito';
 import * as Notifications from 'expo-notifications';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
 import { Appearance, AppState, useColorScheme } from 'react-native';
@@ -66,6 +66,12 @@ export default function RootLayout() {
 
     // Buttons pressed while the app is open (Android also runs the background task; handling is idempotent).
     const responses = Notifications.addNotificationResponseReceivedListener((r) => {
+      const data = r.notification.request.content.data as { check?: boolean; medIds?: string[]; slots?: string[]; date?: string } | undefined;
+      // Tapping a check reminder opens the reading form for it.
+      if (r.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER && data?.check && data.medIds?.[0]) {
+        router.push({ pathname: '/check/log', params: { id: data.medIds[0], slot: data.slots?.[0] ?? '', date: data.date ?? '' } });
+        return;
+      }
       handleReminderAction(r.actionIdentifier, r.notification.request.content.data).catch((e) => console.warn(e));
     });
     checkTimeZone();
@@ -105,6 +111,9 @@ export default function RootLayout() {
             <Stack.Screen name="med/[id]" options={{ title: 'Medication', presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="machine/[id]" options={{ title: 'Machine', presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="machine/night" options={{ title: 'How was the night?' }} />
+            <Stack.Screen name="check/[id]" options={{ title: 'Check', presentation: 'modal', animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="check/log" options={{ title: 'Log a reading' }} />
+            <Stack.Screen name="readings" options={{ title: 'Readings' }} />
             <Stack.Screen name="interactions" options={{ title: 'Interactions' }} />
             <Stack.Screen name="settings/index" options={{ title: 'Settings' }} />
             <Stack.Screen name="settings/[group]" options={{ title: 'Settings' }} />

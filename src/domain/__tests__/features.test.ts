@@ -74,9 +74,9 @@ describe('features', () => {
     expect(featuresPatch(s, { ...s.features, caregiving: false }).features?.caregiving).toBe(true);
   });
 
-  it('hide unbuilt and Android-only features where they do not apply', () => {
-    expect(featuresHere(true).some((f) => f.id === 'sugarChecks')).toBe(false);
-    expect(featuresHere(true, true).some((f) => f.id === 'sugarChecks')).toBe(true);
+  it('hide Android-only features where they do not apply', () => {
+    expect(featuresHere(true).some((f) => f.id === 'sugarChecks')).toBe(true);
+    expect(featuresHere(true).some((f) => f.id === 'bpChecks')).toBe(true);
     expect(featuresHere(false).some((f) => f.id === 'watch')).toBe(false);
   });
 

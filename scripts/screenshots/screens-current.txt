@@ -4,6 +4,8 @@ meds meds
 progress progress
 medication med/demo-metformin
 machine machine/demo-cpap
+check check/demo-sugar
+readings readings
 interactions interactions
 settings settings
 settings-features settings/features

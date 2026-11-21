@@ -4,9 +4,10 @@ import { toDateKey } from '../domain/dates';
 import { daysOfSupply, units } from '../domain/dose';
 import { groupFromReminderId, groupKey, planReminders, refillText, REMINDER_PREFIX, reminderText, type PlannedReminder } from '../domain/reminders';
 import { dosesOn, slotKey } from '../domain/schedule';
-import type { DoseStatus, Medication } from '../domain/types';
+import { isCheck, type DoseStatus, type Medication } from '../domain/types';
 import * as repo from '../db/repo';
 import { routineAt } from '../domain/routines';
+import { checkIsOn } from '../domain/checks';
 import { PART_REMINDER_PREFIX, partReminderText, planPartReminders } from '../domain/machines';
 import { setupTimerChannel, startFoodTimer } from './food';
 
@@ -16,6 +17,8 @@ export const CHANNEL_ID = 'dose-reminders-private';
 const OLD_CHANNEL_IDS = ['dose-reminders', 'refills'];
 const REFILL_CHANNEL_ID = 'refills-private';
 const CATEGORY_ID = 'dose';
+/** Checks (blood sugar, blood pressure) are answered with a reading in the app, so they only get Snooze. */
+const CHECK_CATEGORY_ID = 'check';
 export const ACTION_TAKEN = 'taken';
 export const ACTION_SNOOZE = 'snooze';
 const ACTION_SKIP = 'skip';
@@ -55,6 +58,9 @@ export async function setupNotifications() {
     { identifier: ACTION_SNOOZE, buttonTitle: `Snooze ${snooze} min`, options: { opensAppToForeground: false } },
     { identifier: ACTION_SKIP, buttonTitle: 'Skip', options: { opensAppToForeground: false, isDestructive: true } },
   ]);
+  await Notifications.setNotificationCategoryAsync(CHECK_CATEGORY_ID, [
+    { identifier: ACTION_SNOOZE, buttonTitle: `Snooze ${snooze} min`, options: { opensAppToForeground: false } },
+  ]);
   setupDone = true;
 }
 
@@ -77,11 +83,12 @@ function contentFor(r: PlannedReminder, meds: Map<string, Medication>, showNames
       autoDismiss: true,
     };
   }
+  const onlyChecks = due.length > 0 && due.every(isCheck);
   return {
     title,
     body,
-    data: { date: r.date, time: r.time, medIds: r.medIds, slots: r.slots },
-    categoryIdentifier: CATEGORY_ID,
+    data: { date: r.date, time: r.time, medIds: r.medIds, slots: r.slots, ...(onlyChecks ? { check: true } : {}) },
+    categoryIdentifier: onlyChecks ? CHECK_CATEGORY_ID : CATEGORY_ID,
     sound: 'default',
     priority: Notifications.AndroidNotificationPriority.MAX,
     autoDismiss: true,
@@ -118,8 +125,9 @@ async function rescheduleOnce() {
   await setupNotifications();
   const now = new Date();
   repo.pruneSnoozes(toDateKey(now));
-  const meds = repo.getMeds();
   const settings = repo.getSettings();
+  // Checks (blood sugar, blood pressure) whose feature is off get no reminders.
+  const meds = repo.getMeds().filter((m) => checkIsOn(m, settings.features));
   // Machine parts (CPAP cushion, filter...) on the day they're due. They share the platform's
   // budget with dose reminders, so a handful at most, soonest first.
   const parts = planPartReminders(meds, now, Platform.OS === 'ios' ? HORIZON_DAYS : 60).slice(0, MAX_PART_REMINDERS);
@@ -257,11 +265,16 @@ export async function handleReminderAction(actionId: string, rawData: unknown) {
   const group = data.group ?? groupKey(data.date, data.time);
   if (actionId === ACTION_TAKEN || actionId === ACTION_SKIP) {
     // The doses as scheduled that day, so each is logged with its own time.
-    const day = new Map(dosesOn(repo.getMeds(), data.date).map((d) => [d.slot, d]));
-    const doses = data.medIds.map((medId, i) => {
-      const slot = data.slots?.[i] ?? slotKey(medId, data.date, data.time);
-      return day.get(slot) ?? { slot, medId, date: data.date, time: data.time };
-    });
+    const meds = repo.getMeds();
+    const day = new Map(dosesOn(meds, data.date).map((d) => [d.slot, d]));
+    // A check (blood sugar, blood pressure) is answered with a reading, so Taken leaves it open.
+    const checks = new Set(meds.filter(isCheck).map((m) => m.id));
+    const doses = data.medIds
+      .map((medId, i) => {
+        const slot = data.slots?.[i] ?? slotKey(medId, data.date, data.time);
+        return day.get(slot) ?? { slot, medId, date: data.date, time: data.time };
+      })
+      .filter((d) => actionId === ACTION_SKIP || !checks.has(d.medId));
     await answerDoses(doses, actionId === ACTION_TAKEN ? 'taken' : 'skipped', { group });
   } else if (actionId === ACTION_SNOOZE) {
     await snoozeGroup(group);

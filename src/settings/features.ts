@@ -23,6 +23,11 @@ export function setFeature(id: FeatureId, on: boolean) {
     return;
   }
   updateSettings(featurePatch(s, id, on));
+  // Turning on checks with none set up yet: go straight to choosing a plan.
+  if (on && (id === 'sugarChecks' || id === 'bpChecks')) {
+    const type = id === 'sugarChecks' ? 'sugar' : 'bp';
+    if (!repo.getMeds().some((m) => !m.archived && m.check?.type === type)) router.push({ pathname: '/check/[id]', params: { id: 'new', type } });
+  }
   if (id === 'watch') (on ? pushToWatchNow() : clearWatch()).catch(() => {});
 }
 

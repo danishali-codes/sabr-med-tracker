@@ -14,7 +14,9 @@ import { addDays, diffDays, formatDateLong, formatTime, parseDateKey, timeFromDa
 import { describeDose } from '../../domain/dose';
 import { adherence, isGoldDay } from '../../domain/progress';
 import { routineAt } from '../../domain/routines';
-import { isMachine, isSupplement } from '../../domain/types';
+import { isCheck, isMachine, isSupplement } from '../../domain/types';
+import { checkIsOn } from '../../domain/checks';
+import { ChecksSection } from '../../components/CheckCards';
 import { MachinesSection } from '../../components/MachineCards';
 import { EarnBackCard, FoodTimerCard, MilestoneCard, ReviewPrompt, TimingCard } from '../../components/TodayCards';
 import { dosesOn, dueAt, groupByTime, indexLogs, punctuality } from '../../domain/schedule';
@@ -51,20 +53,27 @@ export default function TodayScreen() {
   const medById = useMemo(() => new Map(meds.map((m) => [m.id, m])), [meds]);
   // Medicines fill the rings and the streak; supplements have a ring and a list of their own.
   const allDoses = useMemo(() => dosesOn(meds, today), [meds, today]);
-  const doses = useMemo(() => allDoses.filter((d) => !isSupplement(medById.get(d.medId)) && !isMachine(medById.get(d.medId))), [allDoses, medById]);
+  const doses = useMemo(
+    () => allDoses.filter((d) => !isSupplement(medById.get(d.medId)) && !isMachine(medById.get(d.medId)) && !isCheck(medById.get(d.medId))),
+    [allDoses, medById],
+  );
   const suppDoses = useMemo(() => allDoses.filter((d) => isSupplement(medById.get(d.medId))), [allDoses, medById]);
   // Machines (CPAP...) have their own section too.
   const machines = useMemo(() => meds.filter((m) => !m.archived && isMachine(m)), [meds]);
   const machineDoses = useMemo(() => allDoses.filter((d) => isMachine(medById.get(d.medId))), [allDoses, medById]);
+  // Blood sugar and blood pressure checks too, while their feature is on.
+  const checks = useMemo(() => meds.filter((m) => !m.archived && isCheck(m) && checkIsOn(m, settings.features)), [meds, settings.features]);
+  const checkDoses = useMemo(() => allDoses.filter((d) => checks.some((m) => m.id === d.medId)), [allDoses, checks]);
   const todayLogs = useMemo(() => repo.getLogs(today, today), [today, version]);
   const logs = useMemo(() => indexLogs(todayLogs), [todayLogs]);
   // Doses still to take stay up top, grouped by time; taken and skipped ones fold into "Done today".
   const groups = groupByTime(doses.filter((d) => !logs.has(d.slot)));
   const suppOpen = suppDoses.filter((d) => !logs.has(d.slot));
-  const doneDoses = allDoses.filter((d) => logs.has(d.slot) && !isMachine(medById.get(d.medId))).sort((a, b) => a.time.localeCompare(b.time));
+  const doneDoses = allDoses.filter((d) => logs.has(d.slot) && !isMachine(medById.get(d.medId)) && !isCheck(medById.get(d.medId))).sort((a, b) => a.time.localeCompare(b.time));
   const suppDone = suppDoses.filter((d) => logs.has(d.slot)).length;
   const machineDone = machineDoses.filter((d) => logs.has(d.slot)).length;
-  const asNeeded = meds.filter((m) => !m.archived && !isMachine(m) && m.schedule.pattern.kind === 'asNeeded');
+  const checkDone = checkDoses.filter((d) => logs.has(d.slot)).length;
+  const asNeeded = meds.filter((m) => !m.archived && !isMachine(m) && !isCheck(m) && m.schedule.pattern.kind === 'asNeeded');
   const answered = doses.filter((d) => logs.has(d.slot)).length;
   const taken = doses.filter((d) => logs.get(d.slot)?.status === 'taken');
   const onTime = taken.filter((d) => punctuality(d, new Date(logs.get(d.slot)!.at), settings.onTimeWindowMinutes) === 'onTime').length;
@@ -141,6 +150,9 @@ export default function TodayScreen() {
                 ) : null}
                 {machineDoses.length > 0 ? (
                   <Legend color={c.rings[0]} label="Machines" value={`${machineDone} of ${machineDoses.length}`} ring={{ value: machineDone, total: machineDoses.length }} />
+                ) : null}
+                {checkDoses.length > 0 ? (
+                  <Legend color={c.rings[0]} label="Checks" value={`${checkDone} of ${checkDoses.length}`} ring={{ value: checkDone, total: checkDoses.length }} />
                 ) : null}
               </View>
             </View>
@@ -258,6 +270,8 @@ export default function TodayScreen() {
             <Text style={s.suppHint}>Missing a supplement never affects your streak.</Text>
           </FadeIn>
         ) : null}
+
+        <ChecksSection checks={checks} doses={checkDoses} logs={logs} windowMinutes={settings.onTimeWindowMinutes} />
 
         <MachinesSection
           machines={machines}

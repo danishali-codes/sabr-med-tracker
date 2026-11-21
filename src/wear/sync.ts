@@ -20,7 +20,8 @@ function enabled() {
 function todayPayload(now = new Date()) {
   const date = toDateKey(now);
   const settings = repo.getSettings();
-  const meds = repo.getMeds();
+  // Health checks need a reading typed in on the phone, so the watch leaves them out.
+  const meds = repo.getMeds().filter((m) => !m.check);
   const snoozes = new Map<string, number>();
   for (const [group, until] of repo.getSnoozes()) {
     const t = new Date(until).getTime();
@@ -102,7 +103,7 @@ async function applyWatchPress(action: 'take' | 'snooze', body: string | undefin
   }
   const now = new Date();
   if (typeof req.date !== 'string' || typeof req.time !== 'string' || req.date !== toDateKey(now)) return;
-  const group = groupByTime(dosesOn(repo.getMeds(), req.date)).find((g) => g.time === req.time);
+  const group = groupByTime(dosesOn(repo.getMeds().filter((m) => !m.check), req.date)).find((g) => g.time === req.time);
   // A minute of grace: the watch's clock may run slightly ahead of the phone's.
   if (!group || dueAt(req.date, req.time).getTime() > now.getTime() + 60_000) return;
   const open = group.doses.filter((d) => !repo.getLog(d.slot));

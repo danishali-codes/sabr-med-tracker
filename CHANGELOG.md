@@ -6,6 +6,24 @@ every screen, light and dark, are in [docs/screenshots](docs/screenshots).
 <!-- Each "## x.y" heading becomes a release named vx.y.0. "commit:" pins the release to
      an older commit; without it the release points at the merge that added the heading. -->
 
+## 0.17
+
+Blood sugar and blood pressure checks, and a new look.
+
+### Checks
+- Turn on Blood sugar checks or Blood pressure checks in Settings, Features (setup offers them for diabetes, prediabetes and high blood pressure). They start from a plan you pick: for blood sugar, each morning fasting, fasting and after a meal, before meals and at bedtime (for mealtime insulin), or twice a week; for blood pressure, morning and evening, every morning, once a week, or one week before a doctor visit, which stops by itself after 7 days.
+- Each check gets a reminder. Tap it, or the check on Today, to type the reading in. Blood sugar in mg/dL or mmol/L; blood pressure as the top and bottom numbers, with pulse if you like.
+- Every reading shows what it means: low, in range or above target for blood sugar (80 to 130 fasting or before meals, under 180 after meals), and normal, elevated, high or very high for blood pressure.
+- A low blood sugar (under 70) or a very high blood pressure (above 180/120) shows what to do next.
+- Readings: every reading with averages over 7, 30 or 90 days, from Today, a check's page or Settings.
+- The doctor report can include your readings when you tick it for that report.
+- Checks have their own section and ring on Today and their own section in the Medications tab. A missed check never touches your streak.
+- Reminders say "Time for your 7:00 check" unless medicine names are on. Checks are never shared, and stay off the widgets and the watch, since they need a number typed in.
+
+### New look
+- A new logo: a heart with a leaf inside, on the app icon, the watch and the website.
+- Sabr is now "Sabr: Health Tracker".
+
 ## 0.16
 
 Sabr now asks what you need, and leaves out the rest.

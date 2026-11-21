@@ -1,7 +1,9 @@
 import { CONDITIONS, featuresHere } from '../../domain/features';
 import { setFeature } from '../features';
 import { platform } from '../render';
-import { link, toggle } from '../rows';
+import { View } from 'react-native';
+import { Chip, Text } from '../../components/ui';
+import { link, toggle, useSettingStyles } from '../rows';
 import type { SettingItem, SettingsGroup } from '../types';
 
 const featureToggles: SettingItem[] = featuresHere(platform.android).map((f) =>
@@ -16,6 +18,27 @@ const featureToggles: SettingItem[] = featuresHere(platform.android).map((f) =>
     handle: async (on) => setFeature(f.id, on),
   }),
 );
+
+const sugarUnit: SettingItem = {
+  id: 'sugarUnit',
+  title: 'Blood sugar unit',
+  hint: 'How readings are shown and typed in. Changing it converts everything already saved.',
+  keywords: ['mg/dl', 'mmol', 'glucose', 'unit'],
+  feature: 'sugarChecks',
+  Component: function SugarUnitRow({ settings, update }) {
+    const st = useSettingStyles();
+    return (
+      <View style={{ paddingVertical: 8 }}>
+        <Text style={st.label}>Blood sugar unit</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+          <Chip label="mg/dL" selected={settings.sugarUnit !== 'mmol'} onPress={() => update({ sugarUnit: 'mgdl' })} />
+          <Chip label="mmol/L" selected={settings.sugarUnit === 'mmol'} onPress={() => update({ sugarUnit: 'mmol' })} />
+        </View>
+        <Text style={st.hint}>mg/dL is used in the UAE and the US; mmol/L in the UK and Europe.</Text>
+      </View>
+    );
+  },
+};
 
 export const featuresGroup: SettingsGroup = {
   id: 'features',
@@ -54,6 +77,21 @@ export const featuresGroup: SettingsGroup = {
     {
       title: 'Features',
       items: featureToggles,
+    },
+    {
+      title: 'Health checks',
+      items: [
+        link({
+          id: 'readings',
+          icon: 'stats-chart-outline',
+          title: 'Readings',
+          hint: 'Every blood sugar and blood pressure reading, with averages.',
+          keywords: ['history', 'average', 'glucose', 'blood pressure', 'log'],
+          visible: (s) => s.features.sugarChecks || s.features.bpChecks,
+          href: '/readings',
+        }),
+        sugarUnit,
+      ],
     },
   ],
 };

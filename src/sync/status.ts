@@ -1,7 +1,7 @@
 import { addDays, type DateKey } from '../domain/dates';
 import { describeDose } from '../domain/dose';
 import { dosesOn, dueAt } from '../domain/schedule';
-import { isMachine, type DoseLog, type Medication } from '../domain/types';
+import { isCheck, isMachine, type DoseLog, type Medication } from '../domain/types';
 
 /**
  * What a caregiver sees: the last couple of days' doses and whether each was answered.
@@ -37,8 +37,8 @@ export function buildStatus(opts: {
   showNames: boolean;
 }): CareStatus {
   const { meds, logs, today, now, name, showNames } = opts;
-  // Machines (CPAP and the like) aren't medicines, so they're never shared.
-  const active = meds.filter((m) => !m.archived && !isMachine(m));
+  // Machines (CPAP and the like) and health checks aren't medicines, so they're never shared.
+  const active = meds.filter((m) => !m.archived && !isMachine(m) && !isCheck(m));
   const labelOf = (id: string) => {
     const i = active.findIndex((m) => m.id === id);
     const med = active[i];

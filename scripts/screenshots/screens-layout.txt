@@ -5,6 +5,10 @@ progress progress 4
 medication med/demo-metformin 5
 machine machine/demo-cpap 4
 machine-night machine/night?id=demo-cpap 2
+check check/demo-sugar 3
+check-plans check/new?type=bp 2
+check-log check/log?id=demo-bp 2
+readings readings 3
 interactions interactions 2
 settings settings 2
 settings-features settings/features 2

@@ -11,6 +11,7 @@ import { addDays, formatDateLong, toDateKey, type DateKey } from '../domain/date
 import { buildReport, reportHtml } from '../domain/report';
 import * as repo from '../db/repo';
 import { useMeds, useSettings } from '../hooks/useData';
+import { ToggleRow } from '../components/ToggleRow';
 import { makeStyles, useTheme } from '../theme';
 
 const RANGES = [
@@ -33,6 +34,9 @@ export default function ReportScreen() {
   const [to, setTo] = useState<DateKey>(today);
   const [name, setName] = useState(repo.getKv('report_name') ?? '');
   const [busy, setBusy] = useState(false);
+  // Blood sugar and blood pressure readings go in only when the person ticks it, for this report.
+  const [withReadings, setWithReadings] = useState(false);
+  const checksOn = settings.features.sugarChecks || settings.features.bpChecks;
 
   const pick = (key: (typeof RANGES)[number]['key']) => {
     setRange(key);
@@ -46,7 +50,8 @@ export default function ReportScreen() {
   const report = useMemo(
     () =>
       buildReport({
-        meds,
+        // Checks (blood sugar, blood pressure) aren't medicines; their readings have their own part.
+        meds: meds.filter((m) => !m.check),
         logs: repo.getLogs(from, to),
         notes: repo.getNotes(from, to),
         from,
@@ -59,7 +64,13 @@ export default function ReportScreen() {
 
   const html = () => {
     repo.setKv('report_name', name.trim());
-    return reportHtml(report, { patient: name.trim() || undefined, generatedAt: new Date(), windowMinutes: settings.onTimeWindowMinutes });
+    return reportHtml(report, {
+      patient: name.trim() || undefined,
+      generatedAt: new Date(),
+      windowMinutes: settings.onTimeWindowMinutes,
+      readings: withReadings ? repo.getReadings(from, to) : undefined,
+      sugarUnit: settings.sugarUnit,
+    });
   };
 
   const share = async () => {
@@ -109,9 +120,17 @@ export default function ReportScreen() {
             {formatDateLong(from)} to {formatDateLong(to)}
           </Text>
         )}
-        <Field label="Name on the report (optional)" style={{ marginTop: 14, marginBottom: 0 }}>
+        <Field label="Name on the report (optional)" style={{ marginTop: 14, marginBottom: checksOn ? 6 : 0 }}>
           <Input value={name} onChangeText={setName} placeholder="Your name" autoCorrect={false} />
         </Field>
+        {checksOn ? (
+          <ToggleRow
+            label="Include my readings"
+            hint={`Blood sugar and blood pressure readings in this period${withReadings ? `: ${repo.getReadings(from, to).length} of them` : ''}, with averages.`}
+            value={withReadings}
+            onChange={setWithReadings}
+          />
+        ) : null}
       </Card>
 
       <SectionTitle>Summary</SectionTitle>

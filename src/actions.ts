@@ -1,7 +1,7 @@
 import { timeFromDate, toDateKey, type DateKey } from './domain/dates';
 import { groupKey } from './domain/reminders';
 import { markPartChanged } from './domain/machines';
-import type { DoseStatus, Medication } from './domain/types';
+import type { DoseStatus, Medication, Reading } from './domain/types';
 import * as repo from './db/repo';
 import { answerDoses, notifyLowStock, rescheduleAll, snoozeGroup } from './notifications/reminders';
 import { startFoodTimer } from './notifications/food';
@@ -54,4 +54,22 @@ export async function changePart(medId: string, partId: string, date: DateKey = 
   if (!med?.machine) return;
   repo.saveMed(markPartChanged(med, partId, date));
   await rescheduleAll().catch((e) => console.warn('reschedule failed', e));
+}
+
+/**
+ * Saves a blood sugar or blood pressure reading. When it answers a scheduled check, that
+ * check is marked done too (checks never count towards the streak).
+ */
+export async function saveReading(r: Reading, dose?: { slot: string; medId: string; date: DateKey; time: string } | null) {
+  repo.saveReading(r);
+  const log = dose ? repo.getLog(dose.slot) : null;
+  if (dose && log?.status !== 'taken') await answerDoses([dose], 'taken', { replace: true });
+  else await rescheduleAll().catch((e) => console.warn('reschedule failed', e));
+}
+
+/** Deletes a reading. The check it answered is open again. */
+export async function deleteReading(r: Reading) {
+  repo.deleteReading(r.id);
+  const log = r.slot ? repo.getLog(r.slot) : null;
+  if (log) await logDose(log, null);
 }

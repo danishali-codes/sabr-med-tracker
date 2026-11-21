@@ -9,7 +9,8 @@ import { daysOfSupply, describeDose, isLowStock, units } from '../../domain/dose
 import { medConsistency, medDays, medStreak } from '../../domain/progress';
 import { foodLabel } from '../../domain/routines';
 import { describeSchedule, indexLogs, isPausedOn, nextDueDate } from '../../domain/schedule';
-import { isMachine, isSupplement, type DoseLog } from '../../domain/types';
+import { isCheck, isMachine, isSupplement, type DoseLog } from '../../domain/types';
+import { checkIsOn, describeCheck } from '../../domain/checks';
 import { machineKind, partDueText, partsDue } from '../../domain/machines';
 import type { Medication } from '../../domain/types';
 import * as repo from '../../db/repo';
@@ -28,14 +29,18 @@ export default function MedsScreen() {
   const logs = useMemo(() => indexLogs(repo.getLogs()), [version]);
   const settings = useSettings();
   const active = meds.filter((m) => !m.archived);
-  const activeMeds = active.filter((m) => !isSupplement(m) && !isMachine(m));
-  const supplements = active.filter((m) => isSupplement(m) && !isMachine(m));
+  const activeMeds = active.filter((m) => !isSupplement(m) && !isMachine(m) && !isCheck(m));
+  const supplements = active.filter((m) => isSupplement(m) && !isMachine(m) && !isCheck(m));
   const machines = active.filter(isMachine);
+  // Blood sugar and blood pressure checks, while their feature is on.
+  const checks = active.filter((m) => isCheck(m) && checkIsOn(m, settings.features));
+  const checksOn = settings.features.sugarChecks || settings.features.bpChecks;
+  const addCheckType = settings.features.sugarChecks ? 'sugar' : 'bp';
   const archived = meds.filter((m) => m.archived);
 
   return (
     <Screen title="Medications" subtitle={`${active.length} active`} right={<RoundButton icon="add" label="Add medication" onPress={() => router.push('/med/new')} />}>
-      {active.length >= 2 ? (
+      {activeMeds.length + supplements.length >= 2 ? (
         <FadeIn>
           <PressableScale onPress={() => router.push('/interactions')} style={[s.check, { backgroundColor: c.primarySoft }]}>
             <View style={[s.checkIcon, { backgroundColor: c.primary }]}>
@@ -103,6 +108,27 @@ export default function MedsScreen() {
           <MachineCard med={m} today={today} />
         </FadeIn>
       ))}
+      {checksOn || checks.length > 0 ? (
+        <>
+          <SectionTitle
+            right={
+              <Pressable onPress={() => router.push({ pathname: '/check/[id]', params: { id: 'new', type: addCheckType } })} hitSlop={10}>
+                <Text style={{ color: c.primary, fontWeight: '800' }}>Add</Text>
+              </Pressable>
+            }
+          >
+            Checks
+          </SectionTitle>
+          {checks.length === 0 ? (
+            <Text style={[s.sub, { marginLeft: 6, marginBottom: 14 }]}>Blood sugar or blood pressure: a reminder to check, and a place for the readings.</Text>
+          ) : null}
+        </>
+      ) : null}
+      {checks.map((m, i) => (
+        <FadeIn key={m.id} delay={(activeMeds.length + supplements.length + machines.length + i) * 40}>
+          <CheckCard med={m} />
+        </FadeIn>
+      ))}
       {archived.length > 0 ? (
         <>
           <SectionTitle
@@ -115,7 +141,7 @@ export default function MedsScreen() {
             Archived ({archived.length})
           </SectionTitle>
           {showArchived
-            ? archived.map((m) => (isMachine(m) ? <MachineCard key={m.id} med={m} today={today} /> : <MedCard key={m.id} med={m} today={today} streak={0} logs={logs} />))
+            ? archived.map((m) => (isCheck(m) ? <CheckCard key={m.id} med={m} /> : isMachine(m) ? <MachineCard key={m.id} med={m} today={today} /> : <MedCard key={m.id} med={m} today={today} streak={0} logs={logs} />))
             : null}
         </>
       ) : null}
@@ -196,6 +222,33 @@ function MachineCard({ med, today }: { med: Medication; today: string }) {
             </Text>
           </View>
         ) : null}
+      </Card>
+    </PressableScale>
+  );
+}
+
+function CheckCard({ med }: { med: Medication }) {
+  const c = useTheme();
+  const s = useStyles();
+  return (
+    <PressableScale onPress={() => router.push({ pathname: '/check/[id]', params: { id: med.id } })} scaleTo={0.98}>
+      <Card style={med.archived ? { opacity: 0.6 } : undefined}>
+        <View style={s.row}>
+          <MedIcon med={med} size={54} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.name} numberOfLines={1}>
+              {med.name}
+            </Text>
+            <Text style={s.dose}>{describeCheck(med)}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={c.faint} />
+        </View>
+        <View style={s.meta}>
+          <Text style={s.sub}>
+            {med.schedule.pattern.kind === 'asNeeded' ? 'No reminder' : describeSchedule(med.schedule)}
+            {med.schedule.endDate ? ` · until ${formatDateLong(med.schedule.endDate)}` : ''}
+          </Text>
+        </View>
       </Card>
     </PressableScale>
   );

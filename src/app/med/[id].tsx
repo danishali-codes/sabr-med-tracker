@@ -44,11 +44,12 @@ const num = (s: string, fallback: number) => {
 /** Smallest step for the amount stepper: half tablets, half ml, whole everything else. */
 const stepFor = (f: MedForm) => (f === 'pill' || f === 'liquid' ? 0.5 : 1);
 
-/** Machines (CPAP...) have their own editor. */
+/** Machines (CPAP...) and health checks have their own editors. */
 export default function MedOrMachine() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const machine = useMemo(() => (id && id !== 'new' ? repo.getMed(id)?.machine != null : false), [id]);
-  if (machine) return <Redirect href={{ pathname: '/machine/[id]', params: { id } }} />;
+  const saved = useMemo(() => (id && id !== 'new' ? repo.getMed(id) : null), [id]);
+  if (saved?.machine) return <Redirect href={{ pathname: '/machine/[id]', params: { id } }} />;
+  if (saved?.check) return <Redirect href={{ pathname: '/check/[id]', params: { id } }} />;
   return <MedEditor />;
 }
 
