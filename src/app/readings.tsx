@@ -90,11 +90,11 @@ export default function ReadingsScreen() {
                 <Text style={st.time}>{formatTime(timeFromDate(new Date(r.at)))}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={st.value}>{formatReading(r, settings.sugarUnit)}</Text>
-                  <Text style={st.sub} numberOfLines={1}>
-                    {[r.type === 'sugar' ? timingLabel(r.timing) : null, r.note].filter(Boolean).join(' · ')}
+                  <Text style={st.sub}>
+                    <Text style={[st.level, { color: tone(r) }]}>{readingLevelLabel(r)}</Text>
+                    {[r.type === 'sugar' ? timingLabel(r.timing) : null, r.note].filter(Boolean).map((t) => ` · ${t}`).join('')}
                   </Text>
                 </View>
-                <Text style={[st.level, { color: tone(r) }]}>{readingLevelLabel(r)}</Text>
               </Pressable>
             ))}
           </Card>
@@ -125,7 +125,7 @@ const useStyles = makeStyles((c) => ({
   day: { fontSize: 14, fontWeight: '800', color: c.muted, marginTop: 4, marginBottom: 6, marginLeft: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   rowBorder: { borderTopWidth: 1, borderTopColor: c.border },
-  time: { fontSize: 14, fontWeight: '800', color: c.text, width: 64 },
+  time: { fontSize: 14, fontWeight: '800', color: c.text, minWidth: 64, flexShrink: 0 },
   value: { fontSize: 17, fontWeight: '800', color: c.text },
   sub: { fontSize: 13, fontWeight: '600', color: c.muted, marginTop: 1 },
   level: { fontSize: 13, fontWeight: '800' },

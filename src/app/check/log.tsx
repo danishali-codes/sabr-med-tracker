@@ -126,10 +126,10 @@ export default function LogReadingScreen() {
           ) : (
             <>
               <View style={st.bpRow}>
-                <Field label="Top (systolic)" style={{ flex: 1 }}>
+                <Field label="Top number" style={{ flex: 1 }}>
                   <Input value={sys} onChangeText={setSys} placeholder="e.g. 128" keyboardType="number-pad" autoFocus={!saved} style={st.big} />
                 </Field>
-                <Field label="Bottom (diastolic)" style={{ flex: 1 }}>
+                <Field label="Bottom number" style={{ flex: 1 }}>
                   <Input value={dia} onChangeText={setDia} placeholder="e.g. 82" keyboardType="number-pad" style={st.big} />
                 </Field>
               </View>
