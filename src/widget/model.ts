@@ -80,7 +80,8 @@ const count = (n: number) => (n === 1 ? '1 medicine' : `${n} medicines`);
 /** Everything the widgets show, worked out from plain data so it can be tested. */
 export function buildWidgetData({ now, meds, logs: logList, summaries, snoozes, settings }: WidgetInput): WidgetData {
   const today = toDateKey(now);
-  const doses = dosesOn(meds, today);
+  // Health checks are answered with a reading in the app, so the widgets leave them out.
+  const doses = dosesOn(meds.filter((m) => !m.check), today);
   const logs = indexLogs(logList);
   const byId = new Map(meds.map((m) => [m.id, m]));
   const showNames = !!settings.widgetShowNames;

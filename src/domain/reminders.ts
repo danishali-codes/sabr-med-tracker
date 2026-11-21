@@ -1,7 +1,8 @@
 import { addDays, formatTime, toDateKey, type DateKey, type TimeOfDay } from './dates';
 import { describeDose } from './dose';
 import { dosesOn, dueAt, groupByTime } from './schedule';
-import { isMachine, isSupplement, type DoseLog, type Medication, type Settings } from './types';
+import { checkReminderText } from './checks';
+import { isCheck, isMachine, isSupplement, type DoseLog, type Medication, type Settings } from './types';
 
 /** One reminder per time slot: all meds due at 8:00 share a notification. */
 export function groupKey(date: DateKey, time: TimeOfDay): string {
@@ -76,9 +77,9 @@ export function planReminders(opts: {
   const today = toDateKey(now);
   const out: PlannedReminder[] = [];
   const nags = settings.nagEnabled ? nagOffsets(Math.max(0, settings.nagCount), settings.nagEveryMinutes, !!settings.nagEscalate) : [];
-  // Supplements and machines get one gentle reminder: no repeats unless a medicine is due at the same time.
-  const supplements = new Set(meds.filter((m) => isSupplement(m) || isMachine(m)).map((m) => m.id));
-  const machines = new Set(meds.filter(isMachine).map((m) => m.id));
+  // Supplements, machines and checks get one gentle reminder: no repeats unless a medicine is due at the same time.
+  const supplements = new Set(meds.filter((m) => isSupplement(m) || isMachine(m) || isCheck(m)).map((m) => m.id));
+  const machines = new Set(meds.filter((m) => isMachine(m) || isCheck(m)).map((m) => m.id));
 
   // Start yesterday so a late-night dose's follow-ups past midnight still fire.
   for (let i = -1; i <= horizonDays; i++) {
@@ -89,7 +90,7 @@ export function planReminders(opts: {
       if (pending.length === 0) continue;
       const key = groupKey(date, group.time);
       const base = dueAt(date, group.time);
-      // The evening check is about doses; a machine check-in has its own reminder.
+      // The evening check is about doses; machine check-ins and health checks have their own reminder.
       unanswered.push(...pending.filter((d) => !machines.has(d.medId)).map((d) => ({ medId: d.medId, slot: d.slot, time: group.time })));
       const snoozedUntil = snoozes.get(key);
       const snoozed = snoozedUntil != null && new Date(snoozedUntil).getTime() > base.getTime();
@@ -141,7 +142,7 @@ export function planReminders(opts: {
  */
 export function reminderText(
   r: Pick<PlannedReminder, 'kind' | 'time' | 'doseTimes'>,
-  meds: (Pick<Medication, 'name' | 'strength' | 'amount' | 'form' | 'supplement' | 'machine'> & Partial<Pick<Medication, 'schedule'>>)[],
+  meds: (Pick<Medication, 'name' | 'strength' | 'amount' | 'form' | 'supplement' | 'machine'> & Partial<Pick<Medication, 'schedule' | 'check'>>)[],
   showNames: boolean,
   /** The routine's name, e.g. "Breakfast", when this time has one. */
   routine?: string,
@@ -154,10 +155,17 @@ export function reminderText(
 
 function reminderTextPlain(
   r: Pick<PlannedReminder, 'kind' | 'time' | 'doseTimes'>,
-  meds: (Pick<Medication, 'name' | 'strength' | 'amount' | 'form' | 'supplement' | 'machine'> & Partial<Pick<Medication, 'schedule'>>)[],
+  meds: (Pick<Medication, 'name' | 'strength' | 'amount' | 'form' | 'supplement' | 'machine'> & Partial<Pick<Medication, 'schedule' | 'check'>>)[],
   showNames: boolean,
 ): { title: string; body: string } {
   const when = formatTime(r.time);
+  // Blood sugar or blood pressure checks: a reading to log, not a dose.
+  const checks = meds.filter(isCheck);
+  if (checks.length > 0 && checks.length === meds.length && r.kind !== 'missed') return checkReminderText(r.kind, when, checks, showNames);
+  if (checks.length > 0) {
+    const t = reminderTextPlain(r, meds.filter((m) => !isCheck(m)), showNames);
+    return { ...t, body: `${t.body}, and ${checks.length === 1 ? 'a check' : `${checks.length} checks`}` };
+  }
   // A machine on its own (CPAP at bedtime): a check-in, not a dose.
   if (meds.length > 0 && meds.every(isMachine) && r.kind !== 'missed') {
     if (!showNames) {

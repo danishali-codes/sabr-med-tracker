@@ -102,6 +102,13 @@ All of it is in [`src/health/connect.ts`](src/health/connect.ts) and
 - Your health profile is kept in Sabr's database on this phone and in your backups, which are encrypted. It is never part of sharing with family or caregivers, never shown in reminders, never put in a doctor report, and never sent anywhere.
 - Sabr uses it only on the phone, to suggest which features to turn on. Every feature apart from the core and the rewards starts off.
 
+## Blood sugar and blood pressure readings
+
+- Readings you type in are kept in Sabr's database on this phone and in your backups, which are encrypted. They are never part of sharing with family or caregivers and never sent anywhere.
+- Reminders for checks say "Time for your 7:00 check", not what is checked, unless you turned on medicine names.
+- Checks stay off the home screen widgets and the watch.
+- A doctor report includes readings only when you tick "Include my readings" for that report.
+
 ## Other things to know
 
 - **Phone backups:** Android's automatic Google cloud backup is turned off for this app, so

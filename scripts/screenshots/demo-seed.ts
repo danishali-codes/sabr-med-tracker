@@ -47,6 +47,16 @@ function seed() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
   }
+  // A fasting blood sugar check and morning and evening blood pressure, where the version has checks (0.17 onwards).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const hasChecks = typeof require('./db/repo').saveReading === 'function';
+  if (hasChecks) {
+    const checkStart = addDays(today, -21);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    saveMed({ ...base, createdAt: atTime(checkStart, '06:00').toISOString(), id: 'demo-sugar', name: 'Fasting blood sugar', strength: '', amount: 1, form: 'other', color: '#3AB7F0', stock: null, refillAt: null, schedule: { pattern: { kind: 'daily' }, times: ['07:00'], startDate: checkStart }, check: { type: 'sugar', timing: 'fasting' } } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    saveMed({ ...base, createdAt: atTime(checkStart, '06:01').toISOString(), id: 'demo-bp', name: 'Blood pressure', strength: '', amount: 1, form: 'other', color: '#F04A68', stock: null, refillAt: null, schedule: { pattern: { kind: 'daily' }, times: ['07:30', '20:00'], startDate: checkStart }, check: { type: 'bp' } } as any);
+  }
 
   // Fixed pseudo-random sequence so every version gets the same history.
   let r = 7;
@@ -73,6 +83,19 @@ function seed() {
     for (let i = 1; i <= 14; i++) {
       const roll = rand();
       repo.saveNight({ medId: 'demo-cpap', date: addDays(today, -i), hours: Math.round((5 + roll * 3) * 10) / 10, ahi: Math.round((1 + roll * 3) * 10) / 10, mask: roll > 0.8 ? 'some' : 'good' });
+    }
+  }
+  if (hasChecks) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const repo = require('./db/repo');
+    for (const date of eachDay(addDays(today, -21), today)) {
+      for (const d of dosesOn(all.filter((m) => m.check), date)) {
+        const log = repo.getLog(d.slot);
+        if (log?.status !== 'taken') continue;
+        const roll = rand();
+        const fields = d.medId === 'demo-sugar' ? { type: 'sugar', sugar: Math.round(98 + roll * 50), timing: 'fasting' } : { type: 'bp', systolic: Math.round(122 + roll * 22), diastolic: Math.round(76 + roll * 14), pulse: Math.round(64 + roll * 12) };
+        repo.saveReading({ id: `demo-${d.slot}`, at: log.at, date, medId: d.medId, slot: d.slot, ...fields });
+      }
     }
   }
   // Layout check builds: every dose today taken on time, so Today shows a gold day.
@@ -105,8 +128,8 @@ function seed() {
       repo.saveSettings({
         ...s,
         setupDone: true,
-        features: { ...s.features, supplements: true, mood: true, rewards: true },
-        profile: { ...s.profile, conditions: ['diabetes', 'cholesterol'], diabetesType: 'type2', insulin: false, medsPerDay: '3-5', timesPerDay: 2 },
+        features: { ...s.features, supplements: true, mood: true, rewards: true, machines: true, sugarChecks: true, bpChecks: true },
+        profile: { ...s.profile, conditions: ['diabetes', 'highBp', 'cholesterol'], diabetesType: 'type2', insulin: false, medsPerDay: '3-5', timesPerDay: 2 },
       });
     }
   } catch {

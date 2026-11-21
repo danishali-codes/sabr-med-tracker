@@ -55,6 +55,14 @@ const MIGRATIONS: string[] = [
      data TEXT NOT NULL,
      PRIMARY KEY (med_id, date)
    );`,
+  // Blood sugar and blood pressure readings.
+  `CREATE TABLE IF NOT EXISTS reading (
+     id TEXT PRIMARY KEY NOT NULL,
+     date TEXT NOT NULL,
+     at TEXT NOT NULL,
+     data TEXT NOT NULL
+   );
+   CREATE INDEX IF NOT EXISTS reading_date ON reading (date);`,
 ];
 
 export function getDb(): SQLiteDatabase {

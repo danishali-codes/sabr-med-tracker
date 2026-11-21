@@ -4,7 +4,8 @@ import { diffDays, eachDay, formatDateLong, formatTime, toDateKey, type DateKey 
 import { describeDose } from './dose';
 import { trackedFrom } from './progress';
 import { describeSchedule, dosesOn, dueAt, punctuality } from './schedule';
-import type { DayNote, DoseLog, Medication } from './types';
+import { bpStats, formatReading, readingLevelLabel, sugarStats, timingLabel, formatSugar, type SugarUnit } from './checks';
+import type { DayNote, DoseLog, Medication, Reading } from './types';
 
 export interface MedReport {
   id: string;
@@ -181,7 +182,10 @@ const pct = (v: number | null) => (v == null ? '–' : `${Math.round(v * 100)}%`
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** A printable A4 page for the report. Plain HTML and CSS so it prints the same everywhere. */
-export function reportHtml(r: Report, opts: { patient?: string; generatedAt: Date; windowMinutes: number }): string {
+export function reportHtml(
+  r: Report,
+  opts: { patient?: string; generatedAt: Date; windowMinutes: number; readings?: Reading[]; sugarUnit?: SugarUnit },
+): string {
   const range = `${formatDateLong(r.from)} to ${formatDateLong(r.to)}`;
   const medRows = r.meds
     .map(
@@ -251,6 +255,33 @@ export function reportHtml(r: Report, opts: { patient?: string; generatedAt: Dat
   <table style="margin-top:6pt"><tr><th>Date</th><th class="n">Mood (1–5)</th><th>Symptoms</th><th>Note</th></tr>${noteRows}</table>`
       : ''
   }
+  ${opts.readings?.length ? readingsHtml(opts.readings, opts.sugarUnit ?? 'mgdl') : ''}
   <footer>Made with Sabr on ${formatDateLong(toDateKey(opts.generatedAt))}. "Late" means taken the same day but outside the on-time window (more than ${opts.windowMinutes} minutes from the scheduled time). This report is based on what was logged in the app.</footer>
   </body></html>`;
+}
+
+/** Blood sugar and blood pressure readings, when the person chose to include them. */
+function readingsHtml(readings: Reading[], unit: SugarUnit): string {
+  const part = (type: Reading['type']) => {
+    const xs = readings.filter((x) => x.type === type);
+    if (!xs.length) return '';
+    let summary = '';
+    if (type === 'sugar') {
+      const st = sugarStats(xs);
+      summary = `${st.count} readings, average ${st.average != null ? formatSugar(st.average, unit) : '–'}. In range ${st.inRange}, above target ${st.high}, low ${st.low} (targets 80–130 fasting or before meals, under 180 after meals).`;
+    } else {
+      const st = bpStats(xs);
+      summary = `${st.count} readings, average ${st.systolic}/${st.diastolic}${st.pulse != null ? `, pulse ${st.pulse}` : ''}.`;
+    }
+    const rows = xs
+      .map((x) => {
+        const at = new Date(x.at);
+        const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+        return `<tr><td>${formatDateLong(x.date)} ${formatTime(time)}</td><td>${esc(formatReading(x, unit))}</td><td>${esc(readingLevelLabel(x))}</td><td>${esc([type === 'sugar' ? timingLabel(x.timing) : '', x.note ?? ''].filter(Boolean).join(' · '))}</td></tr>`;
+      })
+      .join('');
+    return `<h3>${type === 'sugar' ? 'Blood sugar' : 'Blood pressure'}</h3><div class="muted">${summary}</div>
+  <table style="margin-top:6pt"><tr><th>When</th><th>Reading</th><th>Level</th><th>Notes</th></tr>${rows}</table>`;
+  };
+  return `<h2>Readings</h2>${part('sugar')}${part('bp')}`;
 }

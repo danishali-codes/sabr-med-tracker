@@ -7,7 +7,9 @@ import { ConditionFields, MedicineFields } from '../components/ProfileFields';
 import { ToggleRow } from '../components/ToggleRow';
 import { Button, Card, Text } from '../components/ui';
 import * as repo from '../db/repo';
-import { formatTime } from '../domain/dates';
+import { formatTime, toDateKey } from '../domain/dates';
+import { defaultPlan, planMeds } from '../domain/checks';
+import { saveMedication } from '../actions';
 import {
   featuresHere,
   featuresInUse,
@@ -22,7 +24,7 @@ import {
 import { useSettings } from '../hooks/useData';
 import { updateSettings } from '../settings/rows';
 import { pushToWatchNow, clearWatch } from '../wear/sync';
-import { FONT, makeStyles, useTheme } from '../theme';
+import { FONT, makeStyles, MED_COLORS, useTheme } from '../theme';
 
 type Step = 'welcome' | 'health' | 'medicines' | 'features' | 'reminders' | 'finish';
 const FULL: Step[] = ['welcome', 'health', 'medicines', 'features', 'reminders', 'finish'];
@@ -88,6 +90,15 @@ export default function SetupScreen() {
         ? routinesFor(profile.timesPerDay).map((r) => ({ id: repo.newId(), ...r }))
         : s0.routines;
     updateSettings({ ...patch, routines });
+    // Blood sugar or blood pressure checks ticked with none set up yet: start them on the usual
+    // plan for this profile. They can be changed from the Meds tab.
+    for (const type of ['sugar', 'bp'] as const) {
+      const on = type === 'sugar' ? features.sugarChecks : features.bpChecks;
+      if (!on || s0.features[type === 'sugar' ? 'sugarChecks' : 'bpChecks'] || repo.getMeds().some((m) => m.check?.type === type)) continue;
+      for (const med of planMeds(defaultPlan(type, profile), toDateKey(new Date()), repo.newId, type === 'sugar' ? MED_COLORS[4] : MED_COLORS[3])) {
+        saveMedication(med).catch(() => {});
+      }
+    }
     if (patch.watchTile !== s0.watchTile) (patch.watchTile ? pushToWatchNow() : clearWatch()).catch(() => {});
     router.replace('/');
     if (then === 'addMed') router.push({ pathname: '/med/[id]', params: { id: 'new', setup: '1' } });
@@ -161,7 +172,7 @@ export default function SetupScreen() {
                   {n > 0 ? <View style={s.divider} /> : null}
                   <ToggleRow
                     label={f.question}
-                    hint={f.available ? f.hint : `${f.hint} Coming in the next update.`}
+                    hint={f.available ? f.hint : `${f.hint} Coming in a later update.`}
                     value={features[f.id]}
                     onChange={(v) => setFeatures((cur) => ({ ...cur, [f.id]: v }))}
                   />
@@ -200,6 +211,14 @@ export default function SetupScreen() {
                 ? 'Add your medicines now, one after another, or skip and add them from the Meds tab later.'
                 : 'You can change your features any time in Settings, Features.'}
             </Text>
+            {(['sugar', 'bp'] as const)
+              .filter((t) => (t === 'sugar' ? features.sugarChecks && !settings.features.sugarChecks : features.bpChecks && !settings.features.bpChecks))
+              .filter((t) => !repo.getMeds().some((m) => m.check?.type === t))
+              .map((t) => (
+                <Text key={t} style={s.body}>
+                  {t === 'sugar' ? 'Blood sugar checks' : 'Blood pressure checks'}: {defaultPlan(t, profile).label.toLowerCase()}. You can change the times or pick another plan in the Meds tab.
+                </Text>
+              ))}
           </>
         ) : null}
       </ScrollView>

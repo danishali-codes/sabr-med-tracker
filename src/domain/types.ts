@@ -132,6 +132,11 @@ export interface Medication {
    * machines never touch streaks, gold days or badges.
    */
   machine?: MachineInfo | null;
+  /**
+   * A health check (blood sugar, blood pressure) instead of a medicine. Its "doses" are the
+   * times to check, answered by logging a reading. Never counts towards streaks or badges.
+   */
+  check?: CheckInfo | null;
   /** Breaks (e.g. "stop for a week"): no doses or reminders, and the streak isn't affected. `to` null = until resumed. */
   pauses?: { from: DateKey; to: DateKey | null }[];
   /** When it was archived; doses before this still show in history. */
@@ -149,9 +154,44 @@ export function isMachine(med: Pick<Medication, 'machine'> | undefined | null): 
   return med?.machine != null;
 }
 
-/** Medicines fill the rings and the streak; supplements and machines have their own. */
-export function countsForStreak(med: Pick<Medication, 'supplement' | 'machine'> | undefined | null): boolean {
-  return med != null && !isSupplement(med) && !isMachine(med);
+/** Blood sugar and blood pressure checks are tracked on their own, and never count towards streaks. */
+export function isCheck(med: Pick<Medication, 'check'> | undefined | null): boolean {
+  return med?.check != null;
+}
+
+/** Medicines fill the rings and the streak; supplements, machines and checks have their own. */
+export function countsForStreak(med: (Pick<Medication, 'supplement' | 'machine'> & Partial<Pick<Medication, 'check'>>) | undefined | null): boolean {
+  return med != null && !isSupplement(med) && !isMachine(med) && !isCheck(med);
+}
+
+export type CheckType = 'sugar' | 'bp';
+
+/** When a blood sugar reading is taken, relative to meals. */
+export type SugarTiming = 'fasting' | 'beforeMeal' | 'afterMeal' | 'bedtime' | 'random';
+
+export interface CheckInfo {
+  type: CheckType;
+  /** Blood sugar only: when this check is, e.g. fasting. */
+  timing?: SugarTiming | null;
+}
+
+/** One blood sugar or blood pressure reading. Kept on the phone (and in encrypted backups) only. */
+export interface Reading {
+  id: string;
+  type: CheckType;
+  /** ISO timestamp of when it was measured. */
+  at: string;
+  date: DateKey;
+  /** The check it answers, when it was logged from a reminder. */
+  medId?: string | null;
+  slot?: string | null;
+  /** Blood sugar, always stored in mg/dL. */
+  sugar?: number | null;
+  timing?: SugarTiming | null;
+  systolic?: number | null;
+  diastolic?: number | null;
+  pulse?: number | null;
+  note?: string;
 }
 
 export type MachineType = 'cpap' | 'bipap' | 'nebulizer' | 'oxygen' | 'other';
@@ -290,6 +330,8 @@ export interface Settings {
   features: FeatureFlags;
   /** What the person told Sabr about their health. Kept on the phone (and in encrypted backups), never shared. */
   profile: HealthProfile;
+  /** How blood sugar is shown and typed in. Readings are always stored in mg/dL. */
+  sugarUnit: 'mgdl' | 'mmol';
   /** Setup (or, after updating, the one-time "choose your features" screen) has been finished or skipped. */
   setupDone: boolean;
 }
@@ -370,6 +412,7 @@ export const DEFAULT_SETTINGS: Settings = {
   fullyLocal: false,
   features: DEFAULT_FEATURES,
   profile: EMPTY_PROFILE,
+  sugarUnit: 'mgdl',
   setupDone: false,
 };
 

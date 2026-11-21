@@ -4,7 +4,7 @@ import { isLowStock, normalizeMed } from '../domain/dose';
 import { summarizeDay, trackedFrom, type DaySummary } from '../domain/progress';
 import { getTimeRules, indexLogs, setTimeRules } from '../domain/schedule';
 import { normalizeFeatures, normalizeProfile, type InUse } from '../domain/features';
-import { DEFAULT_SETTINGS, type DayNote, type MachineNight, type DoseLog, type DoseStatus, type Medication, type Settings } from '../domain/types';
+import { DEFAULT_SETTINGS, type DayNote, type MachineNight, type Reading, type DoseLog, type DoseStatus, type Medication, type Settings } from '../domain/types';
 
 // ---- change notifications so screens refresh after any write ----
 
@@ -63,6 +63,7 @@ export function deleteMed(id: string) {
     db.runSync('DELETE FROM meds WHERE id = ?', id);
     db.runSync('DELETE FROM dose_log WHERE med_id = ?', id);
     db.runSync('DELETE FROM machine_night WHERE med_id = ?', id);
+    // Readings stay: they are health history, not part of the check's schedule.
   });
   changed();
 }
@@ -306,6 +307,34 @@ export function saveNight(n: MachineNight) {
   changed();
 }
 
+// ---- readings (blood sugar, blood pressure) ----
+
+export function getReadings(from: DateKey, to: DateKey, type?: Reading['type']): Reading[] {
+  const rows = getDb().getAllSync<{ data: string }>('SELECT data FROM reading WHERE date >= ? AND date <= ? ORDER BY at', from, to);
+  const all = rows.map((r) => JSON.parse(r.data) as Reading);
+  return type ? all.filter((r) => r.type === type) : all;
+}
+
+export function getReading(id: string): Reading | null {
+  const row = getDb().getFirstSync<{ data: string }>('SELECT data FROM reading WHERE id = ?', id);
+  return row ? (JSON.parse(row.data) as Reading) : null;
+}
+
+/** The reading that answered this check slot, if any. */
+export function getReadingForSlot(slot: string, date: DateKey): Reading | null {
+  return getReadings(date, date).find((r) => r.slot === slot) ?? null;
+}
+
+export function saveReading(r: Reading) {
+  getDb().runSync('INSERT OR REPLACE INTO reading (id, date, at, data) VALUES (?, ?, ?, ?)', r.id, r.date, r.at, JSON.stringify(r));
+  changed();
+}
+
+export function deleteReading(id: string) {
+  getDb().runSync('DELETE FROM reading WHERE id = ?', id);
+  changed();
+}
+
 // ---- day summaries ----
 
 /**
@@ -355,7 +384,7 @@ export function getDaySummaries(today: DateKey = toDateKey(new Date())): DaySumm
 // the room decorating, which is switched off for now; they stay so nothing is lost.
 // drive_: which Google account and folder this phone backs up to.
 const LOCAL_ONLY_KV = ['care_', 'sync_', 'share_id', 'backup_id', 'last_share', 'last_backup', 'drive_'];
-const TABLES = ['meds', 'dose_log', 'day_summary', 'snooze', 'purchase', 'placement', 'kv', 'day_note', 'machine_night'] as const;
+const TABLES = ['meds', 'dose_log', 'day_summary', 'snooze', 'purchase', 'placement', 'kv', 'day_note', 'machine_night', 'reading'] as const;
 
 export function exportAll(): string {
   const db = getDb();
@@ -426,6 +455,8 @@ export function inUseNow(): InUse {
   return {
     hasSupplements: meds.some((m) => m.supplement === true),
     hasMachines: meds.some((m) => m.machine != null),
+    hasSugarChecks: meds.some((m) => m.check?.type === 'sugar'),
+    hasBpChecks: meds.some((m) => m.check?.type === 'bp'),
     hasMoodNotes: notes.some((r) => (JSON.parse(r.data) as DayNote).mood != null),
     healthConnect: s.healthConnect,
     ramadan: s.ramadan.enabled,

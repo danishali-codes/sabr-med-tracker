@@ -3,7 +3,10 @@ import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Animated, Image, Pressable, View } from 'react-native';
-import { logDose, snoozeDoses } from '../actions';
+import { deleteReading, logDose, snoozeDoses } from '../actions';
+import { formatReading, readingLevelLabel, readingTone } from '../domain/checks';
+import * as repo from '../db/repo';
+import { useSettings } from '../hooks/useData';
 import { formatTime, timeFromDate, toDateKey } from '../domain/dates';
 import { describeDose } from '../domain/dose';
 import { foodLabel } from '../domain/routines';
@@ -46,8 +49,22 @@ export function DoseRow({
   const isToday = dose.date === toDateKey(new Date());
   // A machine (CPAP...) is checked in, not taken, and is never early or late.
   const machine = !!med.machine;
+  // A check (blood sugar, blood pressure) is answered with a reading.
+  const check = !!med.check;
+  const settings = useSettings();
+  // Looked up whatever the status, so a reading is never hidden and logged twice.
+  const reading = check && log ? repo.getReadingForSlot(dose.slot, dose.date) : null;
+  const openReading = () =>
+    router.push({ pathname: '/check/log', params: { id: med.id, slot: dose.slot, date: dose.date, time: dose.time, ...(reading ? { reading: reading.id } : {}) } });
+  // "Not today" on a check that has a reading removes the reading, so it isn't counted for a skipped check.
+  const skip = async () => {
+    if (reading) await deleteReading(reading);
+    await logDose(dose, 'skipped');
+  };
+  const undo = () => (reading ? deleteReading(reading) : logDose(dose, null));
   const actions: SheetAction[] = [
-    ...(!taken ? [{ label: machine ? 'Used it' : 'Taken', icon: 'checkmark-circle-outline' as const, onPress: () => logDose(dose, 'taken') }] : []),
+    ...(check ? [{ label: reading ? 'Change the reading' : 'Log the reading', icon: 'create-outline' as const, onPress: openReading }] : []),
+    ...(!taken && !check ? [{ label: machine ? 'Used it' : 'Taken', icon: 'checkmark-circle-outline' as const, onPress: () => logDose(dose, 'taken') }] : []),
     ...(!log && isToday
       ? [10, 30, 60].map((m) => ({
           label: m === 60 ? 'Remind me in 1 hour' : `Remind me in ${m} minutes`,
@@ -58,18 +75,26 @@ export function DoseRow({
     ...(machine && taken
       ? [{ label: 'Add hours and notes', icon: 'create-outline' as const, onPress: () => router.push({ pathname: '/machine/night', params: { id: med.id, date: dose.date } }) }]
       : []),
-    ...(!skipped ? [{ label: machine ? "Didn't use it" : 'Skip this dose', icon: 'remove-circle-outline' as const, onPress: () => logDose(dose, 'skipped') }] : []),
-    ...(log ? [{ label: 'Undo', icon: 'arrow-undo-outline' as const, onPress: () => logDose(dose, null), destructive: true }] : []),
+    ...(!skipped ? [{ label: check ? 'Not today' : machine ? "Didn't use it" : 'Skip this dose', icon: 'remove-circle-outline' as const, onPress: skip }] : []),
+    ...(log ? [{ label: 'Undo', icon: 'arrow-undo-outline' as const, onPress: undo, destructive: true }] : []),
   ];
 
   const toggle = () => {
     if (log) return options();
+    if (check) return openReading();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     logDose(dose, 'taken');
   };
 
   let status: { text: string; color: string } | null = null;
-  if (taken && machine) {
+  if (taken && check) {
+    const tone = reading ? readingTone(reading) : 'good';
+    status = reading
+      ? { text: `${formatReading(reading, settings.sugarUnit)} · ${readingLevelLabel(reading)}`, color: tone === 'good' ? c.good : tone === 'warn' ? c.warn : c.bad }
+      : { text: `Done at ${formatTime(timeFromDate(new Date(log!.at)))}`, color: c.good };
+  } else if (skipped && check) {
+    status = { text: 'Not checked', color: c.muted };
+  } else if (taken && machine) {
     status = { text: `Used at ${formatTime(timeFromDate(new Date(log!.at)))}`, color: c.good };
   } else if (skipped && machine) {
     status = { text: 'Not used', color: c.muted };
@@ -94,7 +119,7 @@ export function DoseRow({
         {dose.usualTime ? <Text style={s.moved}>Moved from {formatTime(dose.usualTime)}</Text> : null}
         {status ? <Text style={[s.status, { color: status.color }]}>{status.text}</Text> : null}
       </View>
-      <Pressable onPress={toggle} hitSlop={10} accessibilityRole="button" accessibilityLabel={log ? `${status?.text}. Change` : machine ? `Check in ${med.name}` : `Take ${med.name}`}>
+      <Pressable onPress={toggle} hitSlop={10} accessibilityRole="button" accessibilityLabel={log ? `${status?.text}. Change` : check ? `Log ${med.name}` : machine ? `Check in ${med.name}` : `Take ${med.name}`}>
         <Animated.View
           style={[
             s.check,

@@ -110,8 +110,8 @@ export const FEATURES: FeatureInfo[] = [
     hint: 'Reminders to check your blood sugar, fasting and after meals, and a log of readings.',
     icon: 'water-outline',
     question: 'Remind me to check my blood sugar',
-    keywords: ['glucose', 'diabetes', 'sugar', 'fasting', 'insulin'],
-    available: false,
+    keywords: ['glucose', 'diabetes', 'sugar', 'fasting', 'insulin', 'reading'],
+    available: true,
   },
   {
     id: 'bpChecks',
@@ -119,8 +119,8 @@ export const FEATURES: FeatureInfo[] = [
     hint: 'Reminders to check your blood pressure, a log of readings and a weekly average.',
     icon: 'heart-outline',
     question: 'Remind me to check my blood pressure',
-    keywords: ['bp', 'hypertension', 'pressure'],
-    available: false,
+    keywords: ['bp', 'hypertension', 'pressure', 'reading'],
+    available: true,
   },
   {
     id: 'mood',
@@ -228,6 +228,8 @@ export function suggestedFeatures(conditions: ConditionId[]): FeatureId[] {
 export interface InUse {
   hasSupplements: boolean;
   hasMachines: boolean;
+  hasSugarChecks?: boolean;
+  hasBpChecks?: boolean;
   hasMoodNotes: boolean;
   healthConnect: boolean;
   ramadan: boolean;
@@ -241,8 +243,8 @@ export function featuresInUse(u: InUse): FeatureFlags {
   return {
     supplements: u.hasSupplements,
     machines: u.hasMachines,
-    sugarChecks: false,
-    bpChecks: false,
+    sugarChecks: !!u.hasSugarChecks,
+    bpChecks: !!u.hasBpChecks,
     mood: u.hasMoodNotes,
     healthData: u.healthConnect,
     fasting: u.ramadan,
