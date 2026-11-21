@@ -113,6 +113,10 @@ describe('blood pressure', () => {
   it('averages readings and flags a home average of 135/85 or more', () => {
     expect(bpStats([bpReading(130, 80, 70), bpReading(140, 90, 72)])).toEqual({ count: 2, systolic: 135, diastolic: 85, pulse: 71, highAverage: true });
     expect(bpStats([bpReading(120, 78)]).highAverage).toBe(false);
+    // A week before a doctor visit leaves out its first day, when there are other days.
+    const day1 = { ...bpReading(160, 100), date: '2026-11-14' };
+    expect(bpStats([day1, bpReading(120, 78)], '2026-11-14').systolic).toBe(120);
+    expect(bpStats([day1], '2026-11-14').systolic).toBe(160);
     expect(formatReading(bpReading(128, 82, 70), 'mgdl')).toBe('128/82, pulse 70');
   });
 });

@@ -241,8 +241,13 @@ export interface BpStats {
   highAverage: boolean;
 }
 
-export function bpStats(readings: Reading[]): BpStats {
-  const xs = readings.filter((r) => r.type === 'bp' && r.systolic != null && r.diastolic != null);
+/**
+ * Blood pressure averages. `leaveOut` drops one day's readings (the first day of a week
+ * before a doctor visit, which tends to read high), as long as other days are left.
+ */
+export function bpStats(readings: Reading[], leaveOut?: DateKey | null): BpStats {
+  let xs = readings.filter((r) => r.type === 'bp' && r.systolic != null && r.diastolic != null);
+  if (leaveOut && xs.some((r) => r.date !== leaveOut)) xs = xs.filter((r) => r.date !== leaveOut);
   if (xs.length === 0) return { count: 0, systolic: null, diastolic: null, pulse: null, highAverage: false };
   const avg = (ns: number[]) => Math.round(ns.reduce((a, b) => a + b, 0) / ns.length);
   const systolic = avg(xs.map((r) => r.systolic!));
@@ -316,7 +321,7 @@ export const CHECK_PLANS: CheckPlan[] = [
     id: 'bpWeek',
     type: 'bp',
     label: 'One week before a doctor visit',
-    hint: 'Morning and evening for 7 days, then it stops. Your average leaves out the first day.',
+    hint: 'Morning and evening for 7 days, then it stops. Its page shows the average without the first day, as doctors usually ask.',
     items: [{ check: { type: 'bp' }, times: ['07:30', '20:00'], forDays: 7 }],
   },
   {

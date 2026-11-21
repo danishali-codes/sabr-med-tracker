@@ -146,7 +146,9 @@ export default function CheckEditor() {
           </>
         ) : (
           <>
-            {existing && readings.length > 0 ? <ReadingsCard type={type} readings={readings} unit={settings.sugarUnit} /> : null}
+            {existing && readings.length > 0 ? (
+              <ReadingsCard type={type} readings={readings} unit={settings.sugarUnit} leaveOut={existing.schedule.endDate ? existing.schedule.startDate : null} />
+            ) : null}
 
             <Card>
               <View style={st.headRow}>
@@ -228,10 +230,22 @@ export default function CheckEditor() {
   );
 }
 
-function ReadingsCard({ type, readings, unit }: { type: CheckType; readings: ReturnType<typeof repo.getReadings>; unit: 'mgdl' | 'mmol' }) {
+function ReadingsCard({
+  type,
+  readings,
+  unit,
+  leaveOut,
+}: {
+  type: CheckType;
+  readings: ReturnType<typeof repo.getReadings>;
+  unit: 'mgdl' | 'mmol';
+  /** A set week of checks: the average leaves out its first day. */
+  leaveOut: string | null;
+}) {
   const st = useStyles();
   const sugar = type === 'sugar' ? sugarStats(readings) : null;
-  const bp = type === 'bp' ? bpStats(readings) : null;
+  const bp = type === 'bp' ? bpStats(readings, leaveOut) : null;
+  const leftOut = !!leaveOut && readings.some((r) => r.date === leaveOut) && readings.some((r) => r.date !== leaveOut);
   return (
     <Card>
       <Text style={st.cardTitle}>Last 30 days</Text>
@@ -239,7 +253,7 @@ function ReadingsCard({ type, readings, unit }: { type: CheckType; readings: Ret
         <Stat label="Readings" value={String(readings.length)} />
         {sugar?.average != null ? <Stat label="Average" value={formatSugar(sugar.average, unit)} /> : null}
         {sugar && sugar.count > 0 ? <Stat label="In range" value={`${sugar.inRange} of ${sugar.count}`} /> : null}
-        {bp?.systolic != null ? <Stat label="Average" value={`${bp.systolic}/${bp.diastolic}`} /> : null}
+        {bp?.systolic != null ? <Stat label={leftOut ? 'Average without day 1' : 'Average'} value={`${bp.systolic}/${bp.diastolic}`} /> : null}
       </View>
       <Button title="See all readings" kind="ghost" small onPress={() => router.push({ pathname: '/readings', params: { type } })} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
     </Card>
