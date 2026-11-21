@@ -52,9 +52,15 @@ export function DoseRow({
   // A check (blood sugar, blood pressure) is answered with a reading.
   const check = !!med.check;
   const settings = useSettings();
-  const reading = check && taken ? repo.getReadingForSlot(dose.slot, dose.date) : null;
+  // Looked up whatever the status, so a reading is never hidden and logged twice.
+  const reading = check && log ? repo.getReadingForSlot(dose.slot, dose.date) : null;
   const openReading = () =>
     router.push({ pathname: '/check/log', params: { id: med.id, slot: dose.slot, date: dose.date, time: dose.time, ...(reading ? { reading: reading.id } : {}) } });
+  // "Not today" on a check that has a reading removes the reading, so it isn't counted for a skipped check.
+  const skip = async () => {
+    if (reading) await deleteReading(reading);
+    await logDose(dose, 'skipped');
+  };
   const undo = () => (reading ? deleteReading(reading) : logDose(dose, null));
   const actions: SheetAction[] = [
     ...(check ? [{ label: reading ? 'Change the reading' : 'Log the reading', icon: 'create-outline' as const, onPress: openReading }] : []),
@@ -69,7 +75,7 @@ export function DoseRow({
     ...(machine && taken
       ? [{ label: 'Add hours and notes', icon: 'create-outline' as const, onPress: () => router.push({ pathname: '/machine/night', params: { id: med.id, date: dose.date } }) }]
       : []),
-    ...(!skipped ? [{ label: check ? 'Not today' : machine ? "Didn't use it" : 'Skip this dose', icon: 'remove-circle-outline' as const, onPress: () => logDose(dose, 'skipped') }] : []),
+    ...(!skipped ? [{ label: check ? 'Not today' : machine ? "Didn't use it" : 'Skip this dose', icon: 'remove-circle-outline' as const, onPress: skip }] : []),
     ...(log ? [{ label: 'Undo', icon: 'arrow-undo-outline' as const, onPress: undo, destructive: true }] : []),
   ];
 
