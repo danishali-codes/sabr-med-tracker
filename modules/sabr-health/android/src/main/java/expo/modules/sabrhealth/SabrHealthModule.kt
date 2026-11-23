@@ -204,9 +204,46 @@ class SabrHealthModule : Module() {
         if (ms <= 0) continue
         val d = day(woke)
         d["sleepMin"] = ((d["sleepMin"] as? Double) ?: 0.0) + ms / 60000.0
+        // The night's longest session gives bedtime, wake time and the stages (naps don't).
+        val inBed = Duration.between(s.startTime, s.endTime).toMillis() / 60000.0
+        if (inBed > ((d["inBedMin"] as? Double) ?: 0.0)) {
+          d["inBedMin"] = inBed
+          d["mainSleepMin"] = ms / 60000.0
+          d["bedtime"] = clock(s.startTime, zone)
+          d["wake"] = clock(s.endTime, zone)
+          var deep = 0.0
+          var rem = 0.0
+          var light = 0.0
+          var awake = 0.0
+          for (stage in s.stages) {
+            val min = Duration.between(stage.startTime, stage.endTime).toMillis() / 60000.0
+            when (stage.stage) {
+              SleepSessionRecord.STAGE_TYPE_DEEP -> deep += min
+              SleepSessionRecord.STAGE_TYPE_REM -> rem += min
+              SleepSessionRecord.STAGE_TYPE_LIGHT -> light += min
+              in AWAKE_STAGES -> awake += min
+              else -> {}
+            }
+          }
+          if (deep + rem + light > 0) {
+            d["deepMin"] = deep
+            d["remMin"] = rem
+            d["lightMin"] = light
+          } else {
+            d.remove("deepMin")
+            d.remove("remMin")
+            d.remove("lightMin")
+          }
+          d["awakeMin"] = awake
+        }
       }
     }
 
     return days.values.toList()
+  }
+
+  private fun clock(t: Instant, zone: ZoneId): String {
+    val z = t.atZone(zone)
+    return String.format(java.util.Locale.US, "%02d:%02d", z.hour, z.minute)
   }
 }

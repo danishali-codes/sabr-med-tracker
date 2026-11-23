@@ -9,6 +9,7 @@ import { answerDoses, snoozeGroup } from '../notifications/reminders';
 import { pushShare } from '../sync/engine';
 import { refreshWidgetNow } from '../widget/update';
 import { watchPayload } from './payload';
+import { units } from '../domain/dose';
 
 /** The watch tile, when it's switched on in Settings (off by default). */
 function enabled() {
@@ -39,6 +40,7 @@ function todayPayload(now = new Date()) {
     doses: dosesOn(meds, date),
     logs: indexLogs(repo.getLogs(date, date)),
     names: new Map(meds.map((m) => [m.id, m.name])),
+    amounts: new Map(meds.map((m) => [m.id, m.machine ? 'Check in' : units(m.form, m.amount)])),
     streak,
     showNames: settings.showMedNames,
     snoozes,

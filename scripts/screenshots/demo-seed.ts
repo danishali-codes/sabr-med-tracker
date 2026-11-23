@@ -82,7 +82,7 @@ function seed() {
     const repo = require('./db/repo');
     for (let i = 1; i <= 14; i++) {
       const roll = rand();
-      repo.saveNight({ medId: 'demo-cpap', date: addDays(today, -i), hours: Math.round((5 + roll * 3) * 10) / 10, ahi: Math.round((1 + roll * 3) * 10) / 10, mask: roll > 0.8 ? 'some' : 'good' });
+      repo.saveNight({ medId: 'demo-cpap', date: addDays(today, -i), start: `22:${String(30 + Math.round(roll * 25)).padStart(2, '0')}`, end: `0${5 + Math.round(roll)}:${String(10 + Math.round(roll * 40)).padStart(2, '0')}`, ahi: Math.round((1 + roll * 3) * 10) / 10, mask: roll > 0.8 ? 'some' : 'good' });
     }
   }
   if (hasChecks) {
@@ -128,6 +128,8 @@ function seed() {
       repo.saveSettings({
         ...s,
         setupDone: true,
+        // A schedule (0.18 onwards) so Today shows one card for medicines taken together.
+        ...('doseSets' in s ? { doseSets: [{ id: 'demo-set', name: 'Morning', time: '08:00', days: [], medIds: ['demo-metformin', 'demo-omeprazole', 'demo-vitd'] }] } : {}),
         features: { ...s.features, supplements: true, mood: true, rewards: true, machines: true, sugarChecks: true, bpChecks: true },
         profile: { ...s.profile, conditions: ['diabetes', 'highBp', 'cholesterol'], diabetesType: 'type2', insulin: false, medsPerDay: '3-5', timesPerDay: 2 },
       });
@@ -146,6 +148,14 @@ try {
     date: addDays(today, -i),
     steps: i === 0 ? 4318 : 5200 + ((i * 2731) % 6100),
     sleepMin: 380 + ((i * 47) % 110),
+    mainSleepMin: 380 + ((i * 47) % 110),
+    inBedMin: 380 + ((i * 47) % 110) + 20 + (i % 4) * 8,
+    bedtime: `23:${String(5 + ((i * 13) % 50)).padStart(2, '0')}`,
+    wake: `06:${String(10 + ((i * 17) % 45)).padStart(2, '0')}`,
+    deepMin: 60 + (i % 5) * 6,
+    remMin: 80 + (i % 4) * 7,
+    lightMin: 230 + ((i * 47) % 90),
+    awakeMin: 20 + (i % 4) * 8,
     hrAvg: 74 + (i % 7),
     hrMin: 55 + (i % 5),
     hrMax: 118 + (i % 13),

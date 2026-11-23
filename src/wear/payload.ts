@@ -1,4 +1,4 @@
-import { formatTime, type DateKey } from '../domain/dates';
+import { formatTime, timeFromDate, type DateKey } from '../domain/dates';
 import { groupKey } from '../domain/reminders';
 import type { DoseLog, ScheduledDose } from '../domain/types';
 
@@ -16,6 +16,11 @@ export interface WatchPayload {
   streak: number;
   /** Every dose today in time order: t = time (HH:MM), s = state. Draws the ring. */
   marks: { t: string; s: 'taken' | 'skipped' | 'open' }[];
+  /**
+   * Today's full list for the watch app (tap the tile): every dose in time order. `name` only
+   * when names are on; otherwise `what` says how much, e.g. "2 tablets".
+   */
+  list?: { t: string; label: string; name: string | null; what: string; s: 'taken' | 'skipped' | 'open'; at: string | null }[];
   /** Times that still have doses to take, earliest first. */
   open: { time: string; label: string; at: number; count: number; names: string | null; snoozedUntil: number | null }[];
 }
@@ -26,6 +31,8 @@ export function watchPayload(input: {
   doses: ScheduledDose[];
   logs: Map<string, DoseLog>;
   names: Map<string, string>;
+  /** How much each dose is, without the name ("2 tablets"). */
+  amounts?: Map<string, string>;
   streak: number;
   showNames: boolean;
   /** Snoozed times: group key (date|time) to when the snooze ends. */
@@ -47,6 +54,17 @@ export function watchPayload(input: {
     total: sorted.length,
     streak: input.streak,
     marks: sorted.map((d) => ({ t: d.time, s: logs.get(d.slot)?.status ?? 'open' })),
+    list: sorted.map((d) => {
+      const log = logs.get(d.slot);
+      return {
+        t: d.time,
+        label: formatTime(d.time),
+        name: showNames ? (names.get(d.medId) ?? 'Medicine') : null,
+        what: input.amounts?.get(d.medId) ?? '',
+        s: log?.status ?? 'open',
+        at: log ? formatTime(timeFromDate(new Date(log.at))) : null,
+      };
+    }),
     open: [...open.entries()].map(([time, group]) => {
       const first = names.get(group[0].medId) ?? 'Medicine';
       return {

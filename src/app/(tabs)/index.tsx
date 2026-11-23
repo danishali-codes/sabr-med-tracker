@@ -14,6 +14,8 @@ import { addDays, diffDays, formatDateLong, formatTime, parseDateKey, timeFromDa
 import { describeDose } from '../../domain/dose';
 import { adherence, isGoldDay } from '../../domain/progress';
 import { routineAt } from '../../domain/routines';
+import { describeDays, setsOn } from '../../domain/sets';
+import { askTakenTime } from '../../components/takenTime';
 import { isCheck, isMachine, isSupplement } from '../../domain/types';
 import { checkIsOn } from '../../domain/checks';
 import { ChecksSection } from '../../components/CheckCards';
@@ -66,9 +68,13 @@ export default function TodayScreen() {
   const checkDoses = useMemo(() => allDoses.filter((d) => checks.some((m) => m.id === d.medId)), [allDoses, checks]);
   const todayLogs = useMemo(() => repo.getLogs(today, today), [today, version]);
   const logs = useMemo(() => indexLogs(todayLogs), [todayLogs]);
+  // Saved sets for today (e.g. "Work days" at 7:00) gather their medicines into one card.
+  const sets = useMemo(() => setsOn(settings.doseSets, [...doses, ...suppDoses], today), [settings.doseSets, doses, suppDoses, today]);
+  const inSet = new Set(sets.flatMap((x) => x.doses.map((d) => d.slot)));
+  const openSets = sets.map((x) => ({ ...x, open: x.doses.filter((d) => !logs.has(d.slot)) })).filter((x) => x.open.length > 0);
   // Doses still to take stay up top, grouped by time; taken and skipped ones fold into "Done today".
-  const groups = groupByTime(doses.filter((d) => !logs.has(d.slot)));
-  const suppOpen = suppDoses.filter((d) => !logs.has(d.slot));
+  const groups = groupByTime(doses.filter((d) => !logs.has(d.slot) && !inSet.has(d.slot)));
+  const suppOpen = suppDoses.filter((d) => !logs.has(d.slot) && !inSet.has(d.slot));
   const doneDoses = allDoses.filter((d) => logs.has(d.slot) && !isMachine(medById.get(d.medId)) && !isCheck(medById.get(d.medId))).sort((a, b) => a.time.localeCompare(b.time));
   const suppDone = suppDoses.filter((d) => logs.has(d.slot)).length;
   const machineDone = machineDoses.filter((d) => logs.has(d.slot)).length;
@@ -237,6 +243,32 @@ export default function TodayScreen() {
           </FadeIn>
         ) : null}
 
+        {openSets.map((x, i) => {
+          const overdue = dueAt(today, x.set.time) < now;
+          return (
+            <FadeIn key={x.set.id} delay={110 + i * 50}>
+              <SectionTitle right={overdue ? <Text style={[s.tag, { color: c.bad, backgroundColor: c.badSoft }]}>Due now</Text> : null}>
+                {`${x.set.name} · ${formatTime(x.set.time)}`}
+              </SectionTitle>
+              <Card style={{ paddingVertical: 6 }}>
+                {x.open.map((d) => {
+                  const med = medById.get(d.medId);
+                  return med ? <DoseRow key={d.slot} dose={d} med={med} log={logs.get(d.slot)} windowMinutes={settings.onTimeWindowMinutes} showTime={d.time !== x.set.time} /> : null;
+                })}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 6 }}>
+                  <Button title={x.open.length > 1 ? `Take all ${x.open.length}` : 'Take it'} small onPress={() => takeAll(x.open)} style={{ flexGrow: 1 }} />
+                  <Button title="Taken earlier" kind="secondary" small onPress={() => askTakenTime(x.open)} style={{ flexGrow: 1 }} />
+                </View>
+                {x.notDue.length ? (
+                  <Text style={s.setHint}>
+                    {x.notDue.map((id) => medById.get(id)?.name).filter(Boolean).join(', ')} not due today. {describeDays(x.set.days)}.
+                  </Text>
+                ) : null}
+              </Card>
+            </FadeIn>
+          );
+        })}
+
         {groups.map((g, i) => {
           const pending = g.doses;
           const overdue = dueAt(today, g.time) < now;
@@ -251,7 +283,10 @@ export default function TodayScreen() {
                   return med ? <DoseRow key={d.slot} dose={d} med={med} log={logs.get(d.slot)} windowMinutes={settings.onTimeWindowMinutes} /> : null;
                 })}
                 {pending.length > 1 ? (
-                  <Button title={`Take all ${pending.length}`} kind="secondary" small onPress={() => takeAll(pending)} style={{ marginTop: 6, marginBottom: 6 }} />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 6 }}>
+                    <Button title={`Take all ${pending.length}`} kind="secondary" small onPress={() => takeAll(pending)} style={{ flexGrow: 1 }} />
+                    <Button title="Taken earlier" kind="secondary" small onPress={() => askTakenTime(pending)} style={{ flexGrow: 1 }} />
+                  </View>
                 ) : null}
               </Card>
             </FadeIn>
@@ -364,6 +399,7 @@ const useStyles = makeStyles((c) => ({
   bannerTitle: { fontSize: 17, fontWeight: '800', color: c.text },
   bannerText: { fontSize: 14, color: c.muted, marginTop: 4 },
   emptyTitle: { fontSize: 20, fontWeight: '900', color: c.text, marginTop: 8 },
+  setHint: { fontSize: 13, color: c.muted, fontWeight: '600', marginBottom: 6 },
   suppHint: { fontSize: 13, color: c.muted, fontWeight: '600', marginTop: -4, marginBottom: 10, marginLeft: 6 },
   prnRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 },
   prnName: { fontSize: 17, fontWeight: '800', color: c.text },

@@ -54,6 +54,25 @@ final class Today {
         }
     }
 
+    /** One dose in today's full list (the watch app's screen). */
+    static final class Item {
+        final String time;
+        final String label;
+        @Nullable final String name;
+        final String what;
+        String state;
+        @Nullable String at;
+
+        Item(String time, String label, @Nullable String name, String what, String state, @Nullable String at) {
+            this.time = time;
+            this.label = label;
+            this.name = name;
+            this.what = what;
+            this.state = state;
+            this.at = at;
+        }
+    }
+
     private static final String PREFS = "sabr";
     private static final String KEY = "today";
 
@@ -64,6 +83,7 @@ final class Today {
     final int streak;
     final List<Mark> marks = new ArrayList<>();
     final List<Group> open = new ArrayList<>();
+    final List<Item> list = new ArrayList<>();
 
     private Today(JSONObject o) throws JSONException {
         date = o.getString("date");
@@ -87,6 +107,20 @@ final class Today {
                 x.isNull("names") ? null : x.optString("names", null),
                 x.isNull("snoozedUntil") ? 0 : x.optLong("snoozedUntil")));
         }
+        // Older phone apps don't send the list.
+        JSONArray l = o.optJSONArray("list");
+        if (l != null) {
+            for (int i = 0; i < l.length(); i++) {
+                JSONObject x = l.getJSONObject(i);
+                list.add(new Item(
+                    x.getString("t"),
+                    x.optString("label", x.getString("t")),
+                    x.isNull("name") ? null : x.optString("name", null),
+                    x.optString("what", ""),
+                    x.optString("s", "open"),
+                    x.isNull("at") ? null : x.optString("at", null)));
+            }
+        }
     }
 
     String toJson() {
@@ -104,6 +138,15 @@ final class Today {
                     .put("snoozedUntil", x.snoozedUntil == 0 ? JSONObject.NULL : x.snoozedUntil));
             }
             o.put("open", g);
+            JSONArray l = new JSONArray();
+            for (Item x : list) {
+                l.put(new JSONObject()
+                    .put("t", x.time).put("label", x.label)
+                    .put("name", x.name == null ? JSONObject.NULL : x.name)
+                    .put("what", x.what).put("s", x.state)
+                    .put("at", x.at == null ? JSONObject.NULL : x.at));
+            }
+            o.put("list", l);
             return o.toString();
         } catch (JSONException e) {
             return "";
@@ -150,6 +193,9 @@ final class Today {
                 left--;
                 done++;
             }
+        }
+        for (Item x : list) {
+            if (x.time.equals(g.time) && x.state.equals("open")) x.state = "taken";
         }
     }
 

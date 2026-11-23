@@ -39,7 +39,7 @@ export default function MedsScreen() {
   const archived = meds.filter((m) => m.archived);
 
   return (
-    <Screen title="Medications" subtitle={`${active.length} active`} right={<RoundButton icon="add" label="Add medication" onPress={() => router.push('/med/new')} />}>
+    <Screen title="Medicine" subtitle={`${active.length} active`} right={<RoundButton icon="add" label="Add medication" onPress={() => router.push('/med/new')} />}>
       {activeMeds.length + supplements.length >= 2 ? (
         <FadeIn>
           <PressableScale onPress={() => router.push('/interactions')} style={[s.check, { backgroundColor: c.primarySoft }]}>
@@ -51,6 +51,25 @@ export default function MedsScreen() {
               <Text style={s.sub}>Your meds together, plus alcohol and food</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={c.primary} />
+          </PressableScale>
+        </FadeIn>
+      ) : null}
+
+      {activeMeds.length + supplements.length >= 2 ? (
+        <FadeIn>
+          <PressableScale onPress={() => router.push('/sets')} style={[s.check, { backgroundColor: c.card }]}>
+            <View style={[s.checkIcon, { backgroundColor: c.primarySoft }]}>
+              <Ionicons name="albums-outline" size={20} color={c.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.checkTitle, { color: c.text }]}>Schedules</Text>
+              <Text style={s.sub}>
+                {settings.doseSets.length
+                  ? settings.doseSets.map((x) => x.name).join(', ')
+                  : 'Medicines you take together, marked with one tap'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={c.faint} />
           </PressableScale>
         </FadeIn>
       ) : null}

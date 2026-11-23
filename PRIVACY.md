@@ -70,7 +70,7 @@ progress ring, the next dose time and Taken / Snooze buttons. While it's off, no
 
 | When | Sent to | What is sent |
 | --- | --- | --- |
-| A dose, medicine or setting changes, the app opens, or the watch asks | Your paired watch | Today's date, how many doses are due and done, each dose's time and whether it's taken, skipped or still open, any snooze, and your streak. Medicine names only if **Show medicine names in reminders** is on. |
+| A dose, medicine or setting changes, the app opens, or the watch asks | Your paired watch | Today's date, how many doses are due and done, each dose's time, how much it is (like "2 tablets"), whether it's taken, skipped or still open and when it was taken, any snooze, and your streak. Medicine names only if **Show medicine names in reminders** is on. |
 | You press Taken or Snooze on the tile | Your phone | The day and time the tile showed. |
 
 This uses Google's Wear OS data layer (part of Google Play services). It goes over the
@@ -82,7 +82,7 @@ and the [`wear/`](wear) watch app.
 
 ## Health data (off by default)
 
-Settings > Watch, widgets and health > Health data can read your steps, sleep, heart rate and resting heart rate from
+Settings > Watch, widgets and health > Health data can read your steps, sleep (with bedtime, wake time and sleep stages), heart rate and resting heart rate from
 **Health Connect**, the place on the phone where Samsung Health (and a Galaxy Watch through it),
 Google Fit and most watch apps share them. This all happens on the phone: nothing goes online.
 

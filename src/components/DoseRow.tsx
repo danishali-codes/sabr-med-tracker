@@ -15,6 +15,7 @@ import type { DoseLog, Medication, ScheduledDose } from '../domain/types';
 import { makeStyles, useTheme } from '../theme';
 import { MedIcon } from './MedIcon';
 import { ActionSheet, Text, type SheetAction } from './ui';
+import { askTakenTime } from './takenTime';
 
 export function DoseRow({
   dose,
@@ -65,6 +66,12 @@ export function DoseRow({
   const actions: SheetAction[] = [
     ...(check ? [{ label: reading ? 'Change the reading' : 'Log the reading', icon: 'create-outline' as const, onPress: openReading }] : []),
     ...(!taken && !check ? [{ label: machine ? 'Used it' : 'Taken', icon: 'checkmark-circle-outline' as const, onPress: () => logDose(dose, 'taken') }] : []),
+    ...(!taken && !check
+      ? [{ label: machine ? 'Used it earlier, pick the time' : 'Taken earlier, pick the time', icon: 'time-outline' as const, onPress: () => askTakenTime([dose]) }]
+      : []),
+    ...(taken && !check
+      ? [{ label: machine ? 'Change the time used' : 'Change the time taken', icon: 'time-outline' as const, onPress: () => askTakenTime([dose], new Date(log!.at)) }]
+      : []),
     ...(!log && isToday
       ? [10, 30, 60].map((m) => ({
           label: m === 60 ? 'Remind me in 1 hour' : `Remind me in ${m} minutes`,
@@ -107,7 +114,7 @@ export function DoseRow({
   }
 
   return (
-    <Pressable onLongPress={options} style={[s.row, log && { opacity: skipped ? 0.55 : 0.92 }]} delayLongPress={300}>
+    <Pressable onPress={options} onLongPress={options} style={[s.row, log && { opacity: skipped ? 0.55 : 0.92 }]} delayLongPress={300}>
       {med.photo ? <Image source={{ uri: med.photo }} style={s.photo} accessibilityLabel={`Photo of ${med.name}`} /> : <MedIcon med={med} />}
       <View style={{ flex: 1 }}>
         <Text style={[s.name, taken && s.nameDone]} numberOfLines={1}>

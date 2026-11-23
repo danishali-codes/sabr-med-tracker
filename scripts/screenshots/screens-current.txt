@@ -21,3 +21,5 @@ review review
 patterns patterns
 health health
 notification settings @notify
+health-tab wellbeing
+schedules sets

@@ -12,6 +12,18 @@ export interface HealthDay {
   steps?: number;
   /** Minutes asleep in the night that ended on this day (awake time left out). */
   sleepMin?: number;
+  /** The main night's bedtime and wake time ("HH:MM", phone time). */
+  bedtime?: string;
+  wake?: string;
+  /** Minutes in bed for that night's main (longest) session, awake time included... */
+  inBedMin?: number;
+  /** ...and minutes asleep in that same session (naps left out). */
+  mainSleepMin?: number;
+  /** Minutes in each sleep stage, when the watch tracks stages. */
+  deepMin?: number;
+  remMin?: number;
+  lightMin?: number;
+  awakeMin?: number;
   /** Average, lowest and highest heart rate over the day, in beats per minute. */
   hrAvg?: number;
   hrMin?: number;

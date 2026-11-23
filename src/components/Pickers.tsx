@@ -74,3 +74,16 @@ const useStyles = makeStyles((c) => ({
   },
   pickerText: { fontSize: 16, fontWeight: '800', color: c.primary },
 }));
+
+/** Opens the time picker on its own (Android), resolving with the picked time or null when cancelled. */
+export function pickTime(initial: TimeOfDay): Promise<TimeOfDay | null> {
+  return new Promise((resolve) => {
+    if (Platform.OS !== 'android') return resolve(null);
+    DateTimePickerAndroid.open({
+      value: atTime(toDateKey(new Date()), initial),
+      mode: 'time',
+      is24Hour: false,
+      onChange: (e, d) => resolve(e.type === 'set' && d ? timeFromDate(d) : null),
+    });
+  });
+}

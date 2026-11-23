@@ -1,4 +1,4 @@
-import { addDays, atTime, diffDays, eachDay, type DateKey, type TimeOfDay } from './dates';
+import { addDays, atTime, diffDays, eachDay, formatTime, type DateKey, type TimeOfDay } from './dates';
 import { dosesOn } from './schedule';
 import { isMachine, type DoseLog, type MachineNight, type MachinePart, type MachineType, type Medication } from './types';
 
@@ -226,7 +226,7 @@ export function machineUsage(med: Medication, logs: Map<string, DoseLog>, nights
     }
   }
   const mine = nights.filter((n) => n.medId === med.id && n.date >= from && n.date <= to);
-  const hours = mine.map((n) => n.hours).filter((h): h is number => h != null && Number.isFinite(h));
+  const hours = mine.map((n) => nightHours(n)).filter((h): h is number => h != null && Number.isFinite(h));
   const ahi = mine.map((n) => n.ahi).filter((a): a is number => a != null && Number.isFinite(a));
   const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
   return {
@@ -259,9 +259,52 @@ export function parseAhi(s: string): number | null {
 export function describeNight(n: MachineNight | null | undefined): string {
   if (!n) return '';
   const mask = n.mask === 'good' ? 'Good seal' : n.mask === 'some' ? 'Some leaks' : n.mask === 'leaky' ? 'Leaky' : null;
-  return [n.hours != null ? `${n.hours} h` : null, n.ahi != null ? `AHI ${n.ahi}` : null, mask].filter(Boolean).join(' · ');
+  const h = nightHours(n);
+  const span = n.start && n.end ? `${formatTime(n.start)} to ${formatTime(n.end)}` : n.start ? `On at ${formatTime(n.start)}` : null;
+  return [h != null ? `${h} h` : null, span, n.ahi != null ? `AHI ${n.ahi}` : null, mask].filter(Boolean).join(' · ');
 }
 
 export function machinesOf(meds: Medication[]): Medication[] {
   return meds.filter((m) => !m.archived && isMachine(m));
+}
+
+const toMinutes = (t: string) => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+/** Hours between mask on and mask off, across midnight if needed (23:10 to 06:40 = 7.5). */
+export function hoursBetween(start: string, end: string): number {
+  let diff = toMinutes(end) - toMinutes(start);
+  if (diff < 0) diff += 24 * 60;
+  return Math.round((diff / 60) * 10) / 10;
+}
+
+/** The night's hours: typed in, or worked out from mask on and off. */
+export function nightHours(n: Pick<MachineNight, 'hours' | 'start' | 'end'> | null | undefined): number | null {
+  if (!n) return null;
+  if (n.hours != null && Number.isFinite(n.hours)) return n.hours;
+  if (n.start && n.end) return hoursBetween(n.start, n.end);
+  return null;
+}
+
+/**
+ * The average of clock times around midnight, e.g. 23:30 and 00:30 average to 00:00, not noon.
+ * Times are moved to minutes from noon first, so an evening and the small hours sit together.
+ */
+export function averageClock(times: string[]): string | null {
+  if (times.length === 0) return null;
+  const fromNoon = times.map((t) => (toMinutes(t) - 12 * 60 + 24 * 60) % (24 * 60));
+  const avg = Math.round(fromNoon.reduce((a, b) => a + b, 0) / fromNoon.length);
+  const m = (avg + 12 * 60) % (24 * 60);
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+}
+
+/** Spread of clock times in minutes (how much bedtime moves about), using the same noon trick. */
+export function clockSpread(times: string[]): number | null {
+  if (times.length < 2) return null;
+  const fromNoon = times.map((t) => (toMinutes(t) - 12 * 60 + 24 * 60) % (24 * 60));
+  const mean = fromNoon.reduce((a, b) => a + b, 0) / fromNoon.length;
+  const sd = Math.sqrt(fromNoon.reduce((a, b) => a + (b - mean) ** 2, 0) / fromNoon.length);
+  return Math.round(sd);
 }

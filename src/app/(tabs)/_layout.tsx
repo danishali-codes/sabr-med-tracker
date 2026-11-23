@@ -18,6 +18,7 @@ export default function TabsLayout() {
   const settings = useSettings();
   // First run, or the first open after updating to a version with features: setup comes first.
   if (!settings.setupDone) return <Redirect href="/setup" />;
+  const tabs = settings.tabs;
   return (
     <Tabs
       screenOptions={{
@@ -26,6 +27,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.muted,
         tabBarLabelStyle: { fontFamily: FONT.bold, fontSize: 11 },
+        tabBarAllowFontScaling: false,
         tabBarStyle: {
           position: 'absolute',
           marginHorizontal: 16,
@@ -47,9 +49,10 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: icon('sunny', 'sunny-outline') }} />
-      <Tabs.Screen name="calendar" options={{ title: 'History', tabBarIcon: icon('calendar', 'calendar-outline') }} />
-      <Tabs.Screen name="meds" options={{ title: 'Meds', tabBarIcon: icon('medkit', 'medkit-outline') }} />
-      <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: icon('trophy', 'trophy-outline') }} />
+      <Tabs.Screen name="meds" options={{ title: 'Medicine', tabBarIcon: icon('medkit', 'medkit-outline'), href: tabs.meds ? undefined : null }} />
+      <Tabs.Screen name="wellbeing" options={{ title: 'Health', tabBarIcon: icon('heart', 'heart-outline'), href: tabs.health ? undefined : null }} />
+      <Tabs.Screen name="calendar" options={{ title: 'History', tabBarIcon: icon('calendar', 'calendar-outline'), href: tabs.history ? undefined : null }} />
+      <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: icon('trophy', 'trophy-outline'), href: tabs.progress ? undefined : null }} />
     </Tabs>
   );
 }

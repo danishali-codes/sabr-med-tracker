@@ -17,11 +17,20 @@ export const timingGroup: SettingsGroup = {
         link({
           id: 'routines',
           title: 'Routines',
-          hint: 'Group medicines you take together, like "Breakfast" at 8:00.',
+          hint: 'Move several reminders to one time, like "Breakfast" at 8:00, with one reminder for all of them.',
           keywords: ['group', 'breakfast', 'dinner', 'bedtime', 'morning', 'together'],
           icon: 'albums-outline',
           href: '/routines',
           summary: (s) => (s.routines.length ? s.routines.map((r) => r.name).join(', ') : null),
+        }),
+        link({
+          id: 'doseSets',
+          title: 'Schedules',
+          hint: 'Medicines you take together on some days, like 7:00 on work days, marked with one tap on Today.',
+          keywords: ['schedule', 'set', 'bulk', 'take all', 'together', 'work days', 'weekdays', 'monday'],
+          icon: 'checkmark-done-outline',
+          href: '/sets',
+          summary: (s) => (s.doseSets.length ? s.doseSets.map((r) => r.name).join(', ') : null),
         }),
         link({
           id: 'timeChanges',

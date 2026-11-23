@@ -123,6 +123,7 @@ export default function RootLayout() {
             <Stack.Screen name="care" options={{ title: 'People I look after' }} />
             <Stack.Screen name="backup" options={{ title: 'Backup and restore' }} />
             <Stack.Screen name="routines" options={{ title: 'Routines' }} />
+            <Stack.Screen name="sets" options={{ title: 'Schedules' }} />
             <Stack.Screen name="review" options={{ title: 'In review' }} />
             <Stack.Screen name="patterns" options={{ title: 'Patterns' }} />
             <Stack.Screen name="health" options={{ title: 'Health data' }} />
