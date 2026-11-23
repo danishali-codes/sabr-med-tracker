@@ -90,6 +90,14 @@ section { padding: 72px 0; }
 .top-row { display: flex; align-items: center; gap: 12px; height: 60px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 900; font-size: 1.3rem; margin-right: auto; }
 .brand img { border-radius: 9px; }
+/* The heart on its own in light mode, on its purple tile in dark mode. */
+.brand .logo-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand .logo-light { display: none; }
+  :root:not([data-theme="light"]) .brand .logo-dark { display: block; }
+}
+:root[data-theme="dark"] .brand .logo-light { display: none; }
+:root[data-theme="dark"] .brand .logo-dark { display: block; }
 nav { display: none; gap: 4px; }
 nav a { color: var(--muted); text-decoration: none; font-weight: 700; font-size: .95rem; padding: 6px 10px; border-radius: 8px; }
 nav a:hover { color: var(--text); background: var(--sunken); }

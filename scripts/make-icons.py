@@ -1,19 +1,22 @@
-"""Draws Sabr's icon (a heart with a leaf inside, on purple) into assets/ and the website.
+"""Draws Sabr's icon (a heart split by a wave into white and green, on purple) into assets/
+and the website.
 
-The same mark as website/public/favicon.svg and the watch's ic_launcher.xml. Sabr also
-means aloe, hence the leaf. Run: python3 scripts/make-icons.py (needs Pillow).
+The same mark as website/public/favicon.svg and the watch's ic_launcher.xml. On light
+backgrounds the white half becomes purple; the green stays the same. Run: python3 scripts/make-icons.py (needs Pillow).
 """
 from PIL import Image, ImageDraw
 
 PURPLE = '#6A4DF4'
 WHITE = '#FFFFFF'
-MINT = '#B8F5D9'
+GREEN = '#3FD49A'
 SS = 4  # draw big, then scale down for smooth edges
 
 # The mark on a 64 x 64 grid, as cubic curves (same numbers as favicon.svg).
-HEART = [(32, 50), [(20, 42), (13, 34.5), (13, 26.5)], [(13, 20.5), (17.5, 16), (23, 16)], [(27, 16), (30.2, 18.3), (32, 21.5)],
-         [(33.8, 18.3), (37, 16), (41, 16)], [(46.5, 16), (51, 20.5), (51, 26.5)], [(51, 34.5), (44, 42), (32, 50)]]
-LEAF = [(32, 44), [(27, 39.5), (27, 31), (32, 25.5)], [(37, 31), (37, 39.5), (32, 44)]]
+# The heart split by a wave that dips in like the left lobe and swings out like the right.
+LEFT = [(32, 50), [(20, 42), (13, 34.5), (13, 26.5)], [(13, 20.5), (17.5, 16), (23, 16)], [(27, 16), (30.2, 18.3), (32, 21.5)],
+        [(29.5, 24.5), (27.5, 27), (28, 30)], [(28.5, 33), (34, 33.5), (37, 36)], [(40, 38.5), (37, 44), (32, 50)]]
+RIGHT = [(32, 21.5), [(33.8, 18.3), (37, 16), (41, 16)], [(46.5, 16), (51, 20.5), (51, 26.5)], [(51, 34.5), (44, 42), (32, 50)],
+         [(37, 44), (40, 38.5), (37, 36)], [(34, 33.5), (28.5, 33), (28, 30)], [(27.5, 27), (29.5, 24.5), (32, 21.5)]]
 
 
 def points(path, scale, dx, dy, steps=40):
@@ -32,14 +35,15 @@ def points(path, scale, dx, dy, steps=40):
 
 
 def mark(size, fraction=1.0, mono=False):
-    """The heart and leaf centred in a transparent square. fraction 1 = the favicon's proportions."""
+    """The split heart centred in a transparent square. fraction 1 = the favicon's proportions."""
     n = size * SS
     im = Image.new('RGBA', (n, n), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     scale = n / 64 * fraction
     off = n / 2 - 32 * scale
-    d.polygon(points(HEART, scale, off, off), fill=WHITE)
-    d.polygon(points(LEAF, scale, off, off), fill=(0, 0, 0, 0) if mono else MINT)
+    # Monochrome icons are tinted by alpha, so the green half becomes a lighter shade.
+    d.polygon(points(LEFT, scale, off, off), fill=WHITE)
+    d.polygon(points(RIGHT, scale, off, off), fill=(255, 255, 255, 150) if mono else GREEN)
     return im.resize((size, size), Image.LANCZOS)
 
 
