@@ -6,7 +6,8 @@ import { changePart, logAsNeeded } from '../actions';
 import { addDays, formatTime, timeFromDate, type DateKey } from '../domain/dates';
 import { describeNight, machineKind, partDueText, partsDue } from '../domain/machines';
 import { dosesOn } from '../domain/schedule';
-import type { DoseLog, Medication, ScheduledDose } from '../domain/types';
+import type { DoseLog, MachineNight, Medication, ScheduledDose } from '../domain/types';
+import { pickTime } from './Pickers';
 import * as repo from '../db/repo';
 import { makeStyles, useTheme } from '../theme';
 import { DoseRow } from './DoseRow';
@@ -44,8 +45,8 @@ export function MachinesSection({
       machines
         .filter((m) => machineKind(m.machine?.type).nightly && m.schedule.pattern.kind !== 'asNeeded')
         .map((m) => {
-          const used = dosesOn([m], yesterday).some((d) => repo.getLog(d.slot)?.status === 'taken');
-          return { med: m, used, night: used ? repo.getNight(m.id, yesterday) : null };
+          const log = dosesOn([m], yesterday).map((d) => repo.getLog(d.slot)).find((l) => l?.status === 'taken');
+          return { med: m, used: !!log, checkin: log ? timeFromDate(new Date(log.at)) : null, night: log ? repo.getNight(m.id, yesterday) : null };
         })
         .filter((x) => x.used),
     [machines, yesterday, version],
@@ -77,9 +78,26 @@ export function MachinesSection({
             </View>
           );
         })}
-        {lastNights.map(({ med, night }) => (
+        {lastNights.map(({ med, night, checkin }) => (
+          <View key={med.id}>
+          {!night?.end ? (
+            <View style={s.offRow}>
+              <Text style={s.offText}>
+                {machines.length > 1 ? `${med.name}: when` : 'When'} did the mask come off?
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <Button title="Just now" small onPress={() => maskOff(med.id, yesterday, night, checkin, timeFromDate(new Date()))} style={{ flexGrow: 1 }} />
+                <Button
+                  title="Pick the time"
+                  small
+                  kind="secondary"
+                  onPress={() => pickTime(timeFromDate(new Date())).then((t) => t && maskOff(med.id, yesterday, night, checkin, t))}
+                  style={{ flexGrow: 1 }}
+                />
+              </View>
+            </View>
+          ) : null}
           <Pressable
-            key={med.id}
             onPress={() => router.push({ pathname: '/machine/night', params: { id: med.id, date: yesterday } })}
             style={s.lastNight}
             accessibilityRole="button"
@@ -90,6 +108,7 @@ export function MachinesSection({
             </Text>
             <Ionicons name="chevron-forward" size={16} color={c.faint} />
           </Pressable>
+          </View>
         ))}
         {due.map(({ med, part }) => (
           <View key={`${med.id}|${part.id}`} style={s.row}>
@@ -114,7 +133,14 @@ export function MachinesSection({
   );
 }
 
+/** Saves when the mask came off; mask on is the check-in time unless one was set already. */
+function maskOff(medId: string, date: DateKey, night: MachineNight | null, checkin: string | null, end: string) {
+  repo.saveNight({ ...(night ?? { medId, date }), medId, date, start: night?.start ?? checkin, end });
+}
+
 const useStyles = makeStyles((c) => ({
+  offRow: { gap: 8, paddingVertical: 12, borderTopWidth: 1, borderTopColor: c.border },
+  offText: { fontSize: 14, fontWeight: '700', color: c.text },
   tag: { fontSize: 12, fontWeight: '800', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 },
   name: { fontSize: 17, fontWeight: '800', color: c.text },

@@ -16,9 +16,23 @@ export async function logDose(
   await rescheduleAll().catch((e) => console.warn('reschedule failed', e));
 }
 
-/** "Take all": every open dose at one time, logged together. */
-export async function takeDoses(doses: { slot: string; medId: string; date: DateKey; time: string }[]) {
-  await answerDoses(doses, 'taken');
+/** "Take all": every open dose at one time, logged together. `at` = taken earlier than now. */
+export async function takeDoses(doses: { slot: string; medId: string; date: DateKey; time: string }[], at?: Date) {
+  await answerDoses(doses, 'taken', at ? { now: at } : {});
+}
+
+/**
+ * Taken at another time: marks doses as taken at `at` (for one you forgot to tick), or moves
+ * the time of doses already taken. Stock isn't used twice.
+ */
+export async function setTakenAt(doses: { slot: string; medId: string; date: DateKey; time: string }[], at: Date) {
+  for (const d of doses) {
+    const log = repo.getLog(d.slot);
+    if (log?.status === 'taken') repo.setTakenTime(d.slot, at);
+  }
+  const open = doses.filter((d) => repo.getLog(d.slot)?.status !== 'taken');
+  if (open.length) await answerDoses(open, 'taken', { now: at, replace: true });
+  else await rescheduleAll().catch((e) => console.warn('reschedule failed', e));
 }
 
 /** As-needed meds: record a dose right now. */

@@ -6,6 +6,32 @@ every screen, light and dark, are in [docs/screenshots](docs/screenshots).
 <!-- Each "## x.y" heading becomes a release named vx.y.0. "commit:" pins the release to
      an older commit; without it the release points at the merge that added the heading. -->
 
+## 0.18
+
+New tabs, schedules for medicines you take together, and fixing the time of a dose afterwards.
+
+### Tabs
+- The bottom bar now has Today, Medicine, Health, History and Progress. Hide any of them except Today in Settings, Look and feel, Tabs at the bottom. A hidden tab keeps everything in it.
+- Health is a new tab for everything that isn't a medicine: today's steps, sleep and heart rate from Samsung Health, sleep next to your CPAP, readings, mood, patterns and your health profile. Each part shows when its feature is on.
+
+### Schedules
+- Save the medicines you take together at one time on some days, like "Work days" at 7:00 on Monday to Thursday. Find them in the Medicine tab or Settings, Timing and routines.
+- On those days Today puts them in one card with Take all, so one tap marks them all. A schedule never changes your reminders (routines still do that).
+
+### When you really took it
+- Took a dose but forgot to tick it? Tap the dose and pick "Taken earlier, pick the time". Ticked it late? Pick "Change the time taken". Early, on time and late follow the time you pick.
+- Every group of doses on Today has a Taken earlier button too, for several at once.
+- The same works for CPAP and other machines ("Used it earlier", "Change the time used"), and in History.
+- Tapping a dose's name now opens its options (long press still works). Tapping the circle still marks it taken.
+
+### CPAP
+- Mask on and mask off times for each night. The morning after, Today asks when the mask came off: Just now, or pick the time. Hours used are worked out from them, or type the machine's own count.
+- Sleep and CPAP on the Health tab: CPAP hours and Samsung Health sleep for each of the last 7, 14 or 30 nights, nights over 4 hours, your usual mask on and off times and how much they move about, sleep efficiency (or deep and REM sleep), how much of your sleep had the CPAP on, and how you slept on nights with and without 4 hours on the CPAP.
+- Samsung Health sleep now also brings bedtime, wake time and sleep stages, when your watch records them. Still read on the phone only and never saved.
+
+### Watch
+- Tap the tile to see today's full list on the watch: every dose by time, what's taken (and when), skipped or still to take, with a Taken button for the time that's due. Names show only when Show medicine names is on; otherwise it says "Medicine 1 · 2 tablets".
+
 ## 0.17
 
 Blood sugar and blood pressure checks, and a new look.

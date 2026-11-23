@@ -77,6 +77,23 @@ export const FOOD_RULES: { value: FoodRule; label: string }[] = [
   { value: 'after', label: 'After food' },
 ];
 
+/**
+ * A saved set of medicines you take together, e.g. "Work days" at 07:00 on Mon to Thu. On those
+ * days Today shows them in one card with Take all, so they can be marked in one go. It doesn't
+ * change any reminder times (routines do that).
+ */
+export interface DoseSet {
+  id: string;
+  name: string;
+  time: TimeOfDay;
+  /** 0 = Sunday ... 6 = Saturday. Empty = every day. */
+  days: number[];
+  medIds: string[];
+}
+
+/** Bottom tabs that can be hidden. Today is always there. */
+export type TabId = 'meds' | 'health' | 'history' | 'progress';
+
 /** A named reminder time shared by several medicines, e.g. "Breakfast" at 08:00. */
 export interface Routine {
   id: string;
@@ -218,6 +235,9 @@ export interface MachineNight {
   date: DateKey;
   /** Hours used, e.g. 6.5. */
   hours?: number | null;
+  /** When the mask went on and came off ("HH:MM"). With both, the hours are worked out. */
+  start?: TimeOfDay | null;
+  end?: TimeOfDay | null;
   /** Events per hour, from the machine's screen (CPAP). */
   ahi?: number | null;
   mask?: 'good' | 'some' | 'leaky' | null;
@@ -302,6 +322,10 @@ export interface Settings {
   hideInRecents: boolean;
   /** Named times, e.g. "Breakfast" at 08:00, that group the medicines due then. */
   routines: Routine[];
+  /** Saved sets of medicines taken together on some days, marked with one tap on Today. */
+  doseSets: DoseSet[];
+  /** Which bottom tabs show (Today always does). */
+  tabs: Record<TabId, boolean>;
   /** Suggest moving a reminder when you usually take the dose at another time. */
   smartTiming: boolean;
   /** A notice when the wait after an empty-stomach medicine is over. */
@@ -403,6 +427,8 @@ export const DEFAULT_SETTINGS: Settings = {
   lockAfterMinutes: 1,
   hideInRecents: false,
   routines: [],
+  doseSets: [],
+  tabs: { meds: true, health: true, history: true, progress: true },
   smartTiming: true,
   foodTimers: true,
   autoBackup: { enabled: false, target: 'folder', folderUri: null, folderName: null, everyDays: 7 },

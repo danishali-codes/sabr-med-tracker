@@ -53,3 +53,21 @@ describe('watch tile payload', () => {
     expect(p.marks.filter((m) => m.s === 'skipped')).toHaveLength(1);
   });
 });
+
+describe('watch day list', () => {
+  it('lists every dose with its state, and names only when they are on', () => {
+    const logs = new Map([[doses[1].slot, log(doses[1], 'taken')]]);
+    const amounts = new Map([['a', '1 tablet'], ['b', '2 capsules']]);
+    const off = watchPayload({ ...base, doses, logs, amounts, showNames: false });
+    expect(off.list!.map((x) => [x.t, x.name, x.s])).toEqual([
+      ['08:00', null, 'taken'],
+      ['08:00', null, 'open'],
+      ['13:00', null, 'open'],
+      ['21:00', null, 'open'],
+    ]);
+    expect(off.list![0].what).toBe('1 tablet');
+    expect(off.list![0].at).not.toBeNull();
+    const on = watchPayload({ ...base, doses, logs, amounts, showNames: true });
+    expect(on.list!.map((x) => x.name)).toEqual(['Metformin', 'Omeprazole', 'Vitamin D', 'Atorvastatin']);
+  });
+});

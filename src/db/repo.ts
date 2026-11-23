@@ -200,6 +200,16 @@ export function setDose(
   return lowStock;
 }
 
+/** Moves when a taken (or skipped) dose was logged, without touching stock. */
+export function setTakenTime(slot: string, at: Date) {
+  const db = getDb();
+  const prev = db.getFirstSync<{ date: string }>('SELECT date FROM dose_log WHERE slot = ?', slot);
+  if (!prev) return;
+  db.runSync('UPDATE dose_log SET at = ? WHERE slot = ?', at.toISOString(), slot);
+  db.runSync('DELETE FROM day_summary WHERE date = ?', prev.date);
+  changed();
+}
+
 // ---- snoozes ----
 
 export function getSnoozes(): Map<string, string> {
@@ -248,6 +258,8 @@ export function getSettings(): Settings {
     care: { ...DEFAULT_SETTINGS.care, ...(saved.care ?? {}) },
     autoBackup: { ...DEFAULT_SETTINGS.autoBackup, ...(saved.autoBackup ?? {}) },
     routines: saved.routines ?? [],
+    doseSets: saved.doseSets ?? [],
+    tabs: { ...DEFAULT_SETTINGS.tabs, ...(saved.tabs ?? {}) },
     features: normalizeFeatures(saved.features),
     profile: normalizeProfile(saved.profile),
   };
@@ -301,7 +313,7 @@ export function getNights(from: DateKey, to: DateKey, medId?: string): MachineNi
 
 /** Saves how the night went, or removes it when nothing is filled in. */
 export function saveNight(n: MachineNight) {
-  const empty = n.hours == null && n.ahi == null && !n.mask && !n.note?.trim();
+  const empty = n.hours == null && n.ahi == null && !n.mask && !n.note?.trim() && !n.start && !n.end;
   if (empty) getDb().runSync('DELETE FROM machine_night WHERE med_id = ? AND date = ?', n.medId, n.date);
   else getDb().runSync('INSERT OR REPLACE INTO machine_night (med_id, date, data) VALUES (?, ?, ?)', n.medId, n.date, JSON.stringify(n));
   changed();

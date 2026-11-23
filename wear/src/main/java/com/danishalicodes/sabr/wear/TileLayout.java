@@ -52,10 +52,11 @@ final class TileLayout {
         if (today.total == 0) {
             return screen(ring(null), message("Nothing today", today.streak > 0 ? streak(today.streak) : "No doses are due today", packageName));
         }
+        // Tapping the tile (anywhere but its buttons) opens today's full list.
         Today.Group due = today.due(now);
-        if (due != null) return screen(ring(today), dueNow(today, due));
-        if (today.open.isEmpty()) return screen(ring(today), allDone(today));
-        return screen(ring(today), upcoming(today, today.upcoming(now)));
+        if (due != null) return openList(screen(ring(today), dueNow(today, due)), packageName);
+        if (today.open.isEmpty()) return openList(screen(ring(today), allDone(today)), packageName);
+        return openList(screen(ring(today), upcoming(today, today.upcoming(now))), packageName);
     }
 
     // ---- the middle ----
@@ -89,6 +90,8 @@ final class TileLayout {
             c.addContent(text(next.snoozedUntil > 0 ? "Snoozed" : "Next", 12, FAINT, false));
             c.addContent(text(next.names != null ? next.label + "  " + next.names : next.label, 15, PRIMARY, true));
         }
+        c.addContent(gap(6));
+        c.addContent(text("Tap for today's list", 11, FAINT, false));
         return c.build();
     }
 
@@ -105,18 +108,32 @@ final class TileLayout {
         return c.build();
     }
 
+    /** Opens the watch app (today's list) when tapped. */
+    private static ModifiersBuilders.Clickable launch(String packageName) {
+        return new ModifiersBuilders.Clickable.Builder()
+            .setId(CLICK_OPEN)
+            .setOnClick(new ActionBuilders.LaunchAction.Builder()
+                .setAndroidActivity(new ActionBuilders.AndroidActivity.Builder()
+                    .setPackageName(packageName)
+                    .setClassName(MainActivity.class.getName())
+                    .build())
+                .build())
+            .build();
+    }
+
+    private static LayoutElement openList(LayoutElement content, String packageName) {
+        return new Box.Builder()
+            .setWidth(expand())
+            .setHeight(expand())
+            .setModifiers(new ModifiersBuilders.Modifiers.Builder().setClickable(launch(packageName)).build())
+            .addContent(content)
+            .build();
+    }
+
     private static LayoutElement message(String title, String body, String packageName) {
         return new Box.Builder()
             .setModifiers(new ModifiersBuilders.Modifiers.Builder()
-                .setClickable(new ModifiersBuilders.Clickable.Builder()
-                    .setId(CLICK_OPEN)
-                    .setOnClick(new ActionBuilders.LaunchAction.Builder()
-                        .setAndroidActivity(new ActionBuilders.AndroidActivity.Builder()
-                            .setPackageName(packageName)
-                            .setClassName(MainActivity.class.getName())
-                            .build())
-                        .build())
-                    .build())
+                .setClickable(launch(packageName))
                 .build())
             .addContent(new Column.Builder()
                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
