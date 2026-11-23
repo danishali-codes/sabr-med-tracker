@@ -4,7 +4,7 @@ import { markPartChanged } from './domain/machines';
 import type { DoseStatus, Medication, Reading } from './domain/types';
 import * as repo from './db/repo';
 import { answerDoses, notifyLowStock, rescheduleAll, snoozeGroup } from './notifications/reminders';
-import { startFoodTimer } from './notifications/food';
+import { recalcFoodTimer, startFoodTimer } from './notifications/food';
 
 /** Log, change or clear (null) a dose from inside the app, then refresh reminders. */
 export async function logDose(
@@ -33,6 +33,8 @@ export async function setTakenAt(doses: { slot: string; medId: string; date: Dat
   const open = doses.filter((d) => repo.getLog(d.slot)?.status !== 'taken');
   if (open.length) await answerDoses(open, 'taken', { now: at, replace: true });
   else await rescheduleAll().catch((e) => console.warn('reschedule failed', e));
+  // An empty-stomach wait follows the corrected time.
+  await recalcFoodTimer().catch(() => {});
 }
 
 /** As-needed meds: record a dose right now. */

@@ -87,13 +87,13 @@ describe('sleep trend', () => {
       to: '2026-11-21',
       nights: [{ medId: 'cpap', date: '2026-11-20', end: '06:00' }],
       checkins: [log('2026-11-20', 23)],
-      health: [{ date: '2026-11-21', sleepMin: 400, inBedMin: 440, deepMin: 80, remMin: 80, lightMin: 240 }],
+      health: [{ date: '2026-11-21', sleepMin: 460, mainSleepMin: 400, inBedMin: 440, deepMin: 80, remMin: 80, lightMin: 240 }],
     });
-    expect(t.nights[0]).toMatchObject({ start: '23:00', end: '06:00', cpapHours: 7, sleepMin: 400, deepRem: 0.4 });
+    expect(t.nights[0]).toMatchObject({ start: '23:00', end: '06:00', cpapHours: 7, sleepMin: 460, deepRem: 0.4 });
     expect(t.nights[0].efficiency).toBeCloseTo(400 / 440);
     expect(t.nights[1].cpapHours).toBeNull();
     expect(t.fourHourNights).toBe(1);
-    expect(t.coverage).toBe(1);
+    expect(t.coverage).toBeCloseTo(420 / 460);
     expect(t.compare).toBeNull();
   });
 });

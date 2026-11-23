@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { formatTime, timeFromDate } from '../domain/dates';
+import { addDays, formatTime, timeFromDate, toDateKey } from '../domain/dates';
 import { eatAfter } from '../domain/routines';
 import * as repo from '../db/repo';
 
@@ -55,4 +55,15 @@ export async function startFoodTimer(medIds: string[], at = new Date()) {
 export async function stopFoodTimer() {
   repo.deleteKv(KEY);
   await Notifications.cancelScheduledNotificationAsync(FOOD_ID).catch(() => {});
+}
+
+/**
+ * Works the food timer out again from what's logged, e.g. after a dose's taken time was
+ * changed: the timer can move later, earlier, or end.
+ */
+export async function recalcFoodTimer(now = new Date()) {
+  const today = toDateKey(now);
+  const logs = repo.getLogs(addDays(today, -1), today).filter((l) => l.status === 'taken');
+  await stopFoodTimer();
+  for (const l of logs) await startFoodTimer([l.medId], new Date(l.at));
 }

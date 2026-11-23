@@ -148,6 +148,7 @@ try {
     date: addDays(today, -i),
     steps: i === 0 ? 4318 : 5200 + ((i * 2731) % 6100),
     sleepMin: 380 + ((i * 47) % 110),
+    mainSleepMin: 380 + ((i * 47) % 110),
     inBedMin: 380 + ((i * 47) % 110) + 20 + (i % 4) * 8,
     bedtime: `23:${String(5 + ((i * 13) % 50)).padStart(2, '0')}`,
     wake: `06:${String(10 + ((i * 17) % 45)).padStart(2, '0')}`,

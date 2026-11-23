@@ -73,7 +73,8 @@ export function sleepTrend(opts: { from: DateKey; to: DateKey; nights: MachineNi
       sleepMin: asleep,
       bedtime: h?.bedtime ?? null,
       wake: h?.wake ?? null,
-      efficiency: asleep && h?.inBedMin && h.inBedMin > 0 ? Math.min(1, asleep / h.inBedMin) : null,
+      // Asleep and in bed from the same (main) session, so a nap doesn't inflate it.
+      efficiency: h?.mainSleepMin && h.inBedMin && h.inBedMin > 0 ? Math.min(1, h.mainSleepMin / h.inBedMin) : null,
       deepRem: staged > 0 ? ((h?.deepMin ?? 0) + (h?.remMin ?? 0)) / staged : null,
     };
   });

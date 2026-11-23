@@ -208,6 +208,7 @@ class SabrHealthModule : Module() {
         val inBed = Duration.between(s.startTime, s.endTime).toMillis() / 60000.0
         if (inBed > ((d["inBedMin"] as? Double) ?: 0.0)) {
           d["inBedMin"] = inBed
+          d["mainSleepMin"] = ms / 60000.0
           d["bedtime"] = clock(s.startTime, zone)
           d["wake"] = clock(s.endTime, zone)
           var deep = 0.0
