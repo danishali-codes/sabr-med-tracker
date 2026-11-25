@@ -13,6 +13,7 @@ import { canBeInSet, describeDays, setMembers } from '../domain/sets';
 import type { DoseSet } from '../domain/types';
 import * as repo from '../db/repo';
 import { useMeds, useSettings } from '../hooks/useData';
+import { rescheduleAll } from '../notifications/reminders';
 import { useTheme } from '../theme';
 
 const SUGGESTED = ['Morning', 'Work days', 'Weekend morning', 'Lunch', 'Evening', 'Bedtime'];
@@ -21,7 +22,8 @@ const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 /**
  * Schedules: medicines you take together at one time on some days, e.g. "Work days" at 7:00
- * on Monday to Thursday. Today shows them in one card with Take all. Reminders stay as they are.
+ * on Monday to Thursday. On those days each medicine's nearest dose moves to the schedule's
+ * time (reminders too), and Today shows them in one card with Take all.
  */
 export default function SetsScreen() {
   const c = useTheme();
@@ -44,10 +46,11 @@ export default function SetsScreen() {
     const doseSets = [...settings.doseSets.filter((s) => s.id !== set.id), set].sort((a, b) => a.time.localeCompare(b.time));
     repo.saveSettings({ ...repo.getSettings(), doseSets });
     setEditing(null);
+    rescheduleAll().catch(() => {});
   };
 
   const remove = (set: DoseSet) =>
-    popup(`Remove ${set.name}?`, 'Your medicines and their reminders stay as they are.', [
+    popup(`Remove ${set.name}?`, 'Your medicines go back to their own times.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -55,6 +58,7 @@ export default function SetsScreen() {
         onPress: () => {
           repo.saveSettings({ ...repo.getSettings(), doseSets: settings.doseSets.filter((s) => s.id !== set.id) });
           setEditing(null);
+          rescheduleAll().catch(() => {});
         },
       },
     ]);
@@ -113,7 +117,8 @@ export default function SetsScreen() {
         </Card>
         <Text style={[st.hint, { marginTop: 10, marginHorizontal: 4 }]}>
           On {editing.days.length === 0 ? 'every day' : describeDays(editing.days)}, Today puts the ticked medicines together under {editing.name.trim() || 'this schedule'} at{' '}
-          {formatTime(editing.time)}, with one Take all button. Each medicine's reminder times stay the same.
+          {formatTime(editing.time)}, with one Take all button. Each medicine's nearest dose moves to {formatTime(editing.time)}, and so does its reminder.
+          Other days keep the medicine's own times.
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 }}>
           <Button title="Cancel" kind="secondary" onPress={() => setEditing(null)} style={{ flexGrow: 1 }} />
@@ -127,8 +132,8 @@ export default function SetsScreen() {
   return (
     <PageScroll contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
       <Text style={st.hint}>
-        A schedule is a group of medicines you take together, like everything at 7:00 on work days. On those days Today shows them in one card, so one tap marks
-        them all taken. It doesn't change your reminders. To move several reminders to one time, use Routines in Settings.
+        A schedule is a group of medicines you take together, like everything at 7:00 on work days. On those days their doses move to the schedule's time,
+        reminders included, and Today shows them in one card so one tap marks them all taken. Other days keep each medicine's own times.
       </Text>
       {settings.doseSets.map((set) => {
         const members = setMembers(set, meds);

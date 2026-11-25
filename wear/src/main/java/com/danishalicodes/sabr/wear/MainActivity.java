@@ -14,7 +14,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 /**
- * Today's full list: every dose by time, with what's taken, skipped or still to take. Opened by
+ * Today's full list: every dose by time, with what's taken, skipped, missed or still to take. Opened by
  * tapping the tile, or from the watch's app list. A time that's due has a Taken button.
  */
 public class MainActivity extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -126,8 +126,9 @@ public class MainActivity extends Activity implements SharedPreferences.OnShared
         boolean skipped = item.state.equals("skipped");
         TextView name = label(title, 15, skipped ? TileLayout.SKIPPED : Color.WHITE, true, Gravity.START);
         row.addView(name);
-        String status = taken ? (item.at != null ? "Taken at " + item.at : "Taken") : skipped ? "Skipped" : "To take";
-        row.addView(label(status, 12, taken ? TileLayout.GOOD : TileLayout.FAINT, false, Gravity.START));
+        boolean missed = item.state.equals("missed");
+        String status = taken ? (item.at != null ? "Taken at " + item.at : "Taken") : skipped ? "Skipped" : missed ? "Missed" : "To take";
+        row.addView(label(status, 12, taken ? TileLayout.GOOD : missed ? TileLayout.BAD : TileLayout.FAINT, false, Gravity.START));
         return row;
     }
 

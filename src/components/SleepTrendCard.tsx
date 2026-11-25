@@ -24,6 +24,7 @@ export function SleepTrendCard({ machine, today, healthOn }: { machine: Medicati
   const version = useDbVersion();
   const [range, setRange] = useState<(typeof RANGES)[number]>(14);
   const [health, setHealth] = useState<HealthDay[]>([]);
+  const [chartW, setChartW] = useState(0);
   // Nights that started up to last night.
   const to = addDays(today, -1);
   const from = addDays(to, -(range - 1));
@@ -52,7 +53,11 @@ export function SleepTrendCard({ machine, today, healthOn }: { machine: Medicati
   const pct = (x: number | null) => (x == null ? '-' : `${Math.round(x * 100)}%`);
   const quality = trend.avgEfficiency ?? trend.avgDeepRem;
   const qualityLabel = trend.avgEfficiency != null ? 'Sleep efficiency' : 'Deep and REM';
-  const barW = range === 30 ? 4 : range === 14 ? 8 : 14;
+  // Bars shrink to fit the card: on a narrow phone or with large text, 30 nights of two bars
+  // each would otherwise push the chart past the right edge.
+  const perNight = (nightly ? 1 : 0) + (hasSleep ? 1 : 0) || 1;
+  const fitW = chartW > 0 ? Math.floor((chartW / range - 2 - (perNight - 1) * 2) / perNight) : 4;
+  const barW = Math.max(2, Math.min(range === 30 ? 4 : range === 14 ? 8 : 14, fitW));
 
   return (
     <View>
@@ -64,7 +69,12 @@ export function SleepTrendCard({ machine, today, healthOn }: { machine: Medicati
           ))}
         </View>
 
-        <View style={s.chart} accessible accessibilityLabel={`Bars for each of the last ${range} nights`}>
+        <View
+          style={s.chart}
+          onLayout={(e) => setChartW(e.nativeEvent.layout.width)}
+          accessible
+          accessibilityLabel={`Bars for each of the last ${range} nights`}
+        >
           {trend.nights.map((n) => (
             <PressableScale
               key={n.date}
@@ -170,7 +180,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 const useStyles = makeStyles((c) => ({
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 120, marginTop: 4 },
-  col: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
+  col: { flex: 1, minWidth: 0, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
   bars: { height: '100%', flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
   days: { flexDirection: 'row', marginTop: 4 },
   day: { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '700', color: c.muted },

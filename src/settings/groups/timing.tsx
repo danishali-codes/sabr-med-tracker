@@ -26,7 +26,7 @@ export const timingGroup: SettingsGroup = {
         link({
           id: 'doseSets',
           title: 'Schedules',
-          hint: 'Medicines you take together on some days, like 7:00 on work days, marked with one tap on Today.',
+          hint: 'Medicines you take together on some days, like 7:00 on work days. Their doses and reminders move to that time on those days.',
           keywords: ['schedule', 'set', 'bulk', 'take all', 'together', 'work days', 'weekdays', 'monday'],
           icon: 'checkmark-done-outline',
           href: '/sets',

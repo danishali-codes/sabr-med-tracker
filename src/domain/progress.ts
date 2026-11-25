@@ -8,6 +8,8 @@ import { countsForStreak, type DoseLog, type Medication } from './types';
  *   (fewer coins) but never breaks the streak.
  * - A day breaks the streak only when a scheduled dose is never taken or skipped that day.
  * - Skipping on purpose (e.g. doctor said so) is neutral.
+ * - "I didn't take it" (status missed) is the honest opposite: it counts as a missed dose straight
+ *   away, even today, so the day is partial (or missed) and needs a freeze or breaks the streak.
  * - Days with no scheduled doses are neutral.
  * - Every 7 perfect days in a row earns a streak freeze (max 2). A freeze is spent
  *   automatically on a missed day so one bad day doesn't wipe out a long streak.
@@ -30,6 +32,8 @@ export interface DaySummary {
   /** Of those, how many were taken early. Missing on summaries made before this existed. */
   early?: number;
   skipped: number;
+  /** Doses marked "I didn't take it". Missing on summaries made before this existed. */
+  missed?: number;
   status: DayStatus;
 }
 
@@ -66,10 +70,15 @@ export function summarizeDay(
     onTime = 0,
     late = 0,
     early = 0,
-    skipped = 0;
+    skipped = 0,
+    missed = 0;
   for (const d of doses) {
     const log = logs.get(d.slot);
     if (!log) continue;
+    if (log.status === 'missed') {
+      missed++;
+      continue;
+    }
     if (log.status === 'skipped') {
       skipped++;
       continue;
@@ -89,9 +98,10 @@ export function summarizeDay(
   // Every dose skipped on purpose: neutral, like a day with nothing due.
   else if (skipped === scheduled) status = 'none';
   else if (resolved === scheduled) status = 'complete';
-  else if (diffDays(date, today) <= 0) status = 'pending';
+  // A dose you said you didn't take settles the day now: there's no making it complete.
+  else if (missed === 0 && diffDays(date, today) <= 0) status = 'pending';
   else status = resolved > 0 ? 'partial' : 'missed';
-  return { date, scheduled, taken, onTime, late, early, skipped, status };
+  return { date, scheduled, taken, onTime, late, early, skipped, missed, status };
 }
 
 /** The first day a med counts towards streaks: the later of its start date and the day it was added. */
@@ -236,7 +246,7 @@ export function medStreak(med: Medication, logs: Map<string, DoseLog>, today: Da
     const date = addDays(today, -i);
     if (diffDays(trackedFrom(med), date) < 0) break;
     if (!isMedDueOn(med, date)) continue;
-    const answered = med.schedule.times.every((t) => logs.has(slotKey(med.id, date, t)));
+    const answered = med.schedule.times.every((t) => isAnswered(logs.get(slotKey(med.id, date, t))));
     if (answered) n++;
     else if (i === 0) continue; // today still in progress
     else break;
@@ -306,12 +316,19 @@ export function medDays(med: Medication, logs: Map<string, DoseLog>, today: Date
       out.push({ date, mark: 'off' });
       continue;
     }
-    const answered = med.schedule.times.filter((t) => logs.has(slotKey(med.id, date, t))).length;
+    const slots = med.schedule.times.map((t) => logs.get(slotKey(med.id, date, t)));
+    const answered = slots.filter(isAnswered).length;
+    const saidMissed = slots.some((l) => l?.status === 'missed');
     const total = med.schedule.times.length;
-    const mark: DayMark = answered === total ? 'taken' : date === today ? 'pending' : answered > 0 ? 'partial' : 'missed';
+    const mark: DayMark = answered === total ? 'taken' : date === today && !saidMissed ? 'pending' : answered > 0 ? 'partial' : 'missed';
     out.push({ date, mark });
   }
   return out;
+}
+
+/** Taken or skipped. A dose marked missed ("I didn't take it") is logged but not answered. */
+export function isAnswered(log: DoseLog | undefined | null): boolean {
+  return log?.status === 'taken' || log?.status === 'skipped';
 }
 
 /** A complete day with at least one dose taken (skips are fine). */

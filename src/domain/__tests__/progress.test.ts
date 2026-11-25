@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { addDays, eachDay } from '../dates';
-import { BADGES, COINS, computeProgress, isGoldDay, medStreak, summarizeDay, type DaySummary } from '../progress';
+import { BADGES, COINS, adherence, computeProgress, isGoldDay, medDays, medStreak, summarizeDay, type DaySummary } from '../progress';
 import { indexLogs, slotKey } from '../schedule';
 import type { DoseLog, Medication } from '../types';
 
@@ -148,5 +148,36 @@ describe('trackedFrom', () => {
     const s = summarizeDay([m], new Map(), '2026-11-05', '2026-11-12', 60);
     expect(s.status).toBe('none');
     expect(summarizeDay([m], new Map(), '2026-11-11', '2026-11-12', 60).status).toBe('missed');
+  });
+});
+
+describe("I didn't take it (missed)", () => {
+  const miss = (medId: string, date: string, time: string): DoseLog => ({ ...take(medId, date, time, local(date, 21)), status: 'missed' });
+  const skip = (medId: string, date: string, time: string): DoseLog => ({ ...take(medId, date, time, local(date, 9)), status: 'skipped' });
+  const meds = [med('a')];
+
+  it('settles today straight away as a partial day, not pending', () => {
+    const logs = indexLogs([take('a', '2026-11-04', '08:00', local('2026-11-04', 8)), miss('a', '2026-11-04', '20:00')]);
+    const s = summarizeDay(meds, logs, '2026-11-04', '2026-11-04', 60);
+    expect(s).toMatchObject({ taken: 1, missed: 1, skipped: 0, status: 'partial' });
+    expect(adherence([s])).toBe(0.5);
+  });
+
+  it('is not the neutral skip: a day of skips stays neutral, a day of misses is missed', () => {
+    const skipped = summarizeDay(meds, indexLogs([skip('a', '2026-11-03', '08:00'), skip('a', '2026-11-03', '20:00')]), '2026-11-03', '2026-11-04', 60);
+    expect(skipped.status).toBe('none');
+    const missed = summarizeDay(meds, indexLogs([miss('a', '2026-11-03', '08:00'), miss('a', '2026-11-03', '20:00')]), '2026-11-03', '2026-11-04', 60);
+    expect(missed.status).toBe('missed');
+  });
+
+  it('uses a freeze or breaks the streak like any missed day', () => {
+    const p = computeProgress([day('complete', { date: '2026-11-02' }), day('missed', { date: '2026-11-03', missed: 1 })]);
+    expect(p.currentStreak).toBe(0);
+  });
+
+  it('marks the medicine missed today and breaks its own streak', () => {
+    const logs = indexLogs([miss('a', '2026-11-04', '08:00')]);
+    expect(medDays(meds[0], logs, '2026-11-04', 1)).toEqual([{ date: '2026-11-04', mark: 'missed' }]);
+    expect(medStreak(meds[0], indexLogs([miss('a', '2026-11-03', '08:00'), miss('a', '2026-11-03', '20:00')]), '2026-11-04')).toBe(0);
   });
 });

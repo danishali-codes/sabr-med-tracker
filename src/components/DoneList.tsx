@@ -37,8 +37,9 @@ export function DoneList({
 
   if (doses.length === 0) return null;
   const taken = doses.filter((d) => logs.get(d.slot)?.status === 'taken').length;
-  const skipped = doses.length - taken;
-  const summary = [taken ? `${taken} taken` : null, skipped ? `${skipped} skipped` : null].filter(Boolean).join(', ');
+  const missed = doses.filter((d) => logs.get(d.slot)?.status === 'missed').length;
+  const skipped = doses.length - taken - missed;
+  const summary = [taken ? `${taken} taken` : null, skipped ? `${skipped} skipped` : null, missed ? `${missed} missed` : null].filter(Boolean).join(', ');
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

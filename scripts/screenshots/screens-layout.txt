@@ -31,3 +31,4 @@ patterns patterns 2
 health health 2
 health-tab wellbeing 3
 schedules sets 2
+mood mood 2

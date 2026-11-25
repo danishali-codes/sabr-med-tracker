@@ -1,6 +1,7 @@
 import { addDays, atTime, daysInMonth, toDateKey, diffDays, ordinal, parseDateKey, weekdayOf, weekdayShort, formatTime, type DateKey, type TimeOfDay } from './dates';
 import { CITIES, localOffsetMinutes, prayerTimes } from './prayer';
-import type { DoseLog, Medication, RamadanSettings, Schedule, ScheduledDose, Settings, TimeChange } from './types';
+import { setAppliesOn } from './sets';
+import type { DoseLog, DoseSet, Medication, RamadanSettings, Schedule, ScheduledDose, Settings, TimeChange } from './types';
 
 export function slotKey(medId: string, date: DateKey, time: TimeOfDay): string {
   return `${medId}|${date}|${time}`;
@@ -65,7 +66,7 @@ export function isMedDueOn(med: Medication, date: DateKey): boolean {
 // ---- time rules: things that move a dose's time on some days ----
 
 /** The parts of Settings that move dose times. Set from the saved settings by the repo. */
-export type TimeRules = Pick<Settings, 'ramadan' | 'timeChanges' | 'travelMode' | 'homeTimeZone'>;
+export type TimeRules = Pick<Settings, 'ramadan' | 'timeChanges' | 'travelMode' | 'homeTimeZone'> & { doseSets?: DoseSet[] };
 
 let rules: TimeRules | null = null;
 
@@ -129,17 +130,45 @@ export function ramadanMove(times: TimeOfDay[], t: { suhoor: TimeOfDay; iftar: T
   return [t.suhoor, ...spread];
 }
 
+/**
+ * Schedules (dose sets) move a member's dose to the schedule's time on its days. Each schedule
+ * takes the member's dose nearest its time (the earlier one on a tie), and a dose is only moved
+ * by one schedule: the earliest one that asks for it. Same rule Today uses to group them.
+ */
+export function applySets(med: Pick<Medication, 'id' | 'machine' | 'check'>, times: TimeOfDay[], date: DateKey, sets: DoseSet[] | undefined): TimeOfDay[] {
+  if (!sets?.length || med.machine || med.check || times.length === 0) return times;
+  const mine = sets
+    .filter((s) => s.medIds.includes(med.id) && setAppliesOn(s, date))
+    .sort((a, b) => a.time.localeCompare(b.time) || a.name.localeCompare(b.name));
+  if (mine.length === 0) return times;
+  const out = [...times];
+  const claimed = new Set<number>();
+  for (const set of mine) {
+    const target = toMin(set.time);
+    let best = -1;
+    for (let i = 0; i < out.length; i++) {
+      if (claimed.has(i)) continue;
+      if (best < 0 || Math.abs(toMin(out[i]) - target) < Math.abs(toMin(out[best]) - target)) best = i;
+    }
+    if (best < 0) break;
+    claimed.add(best);
+    out[best] = set.time;
+  }
+  return out;
+}
+
 function applies(c: TimeChange, medId: string, date: DateKey) {
   return date >= c.from && date <= c.to && (c.medIds == null || c.medIds.includes(medId));
 }
 
 /**
  * A med's doses on a day: which usual time each one belongs to (`base`, which keeps
- * the dose's identity) and when it's due after weekday times, Ramadan and temporary changes.
+ * the dose's identity) and when it's due after weekday times, schedules, Ramadan and
+ * temporary changes.
  */
 export function timesOn(med: Medication, date: DateKey, r: TimeRules | null = rules): { base: TimeOfDay; time: TimeOfDay }[] {
   const base = med.schedule.times;
-  let times = scheduleTimesOn(med.schedule, date);
+  let times = applySets(med, scheduleTimesOn(med.schedule, date), date, r?.doseSets);
   if (r && isRamadanOn(r.ramadan, date) && (r.ramadan.medIds == null || r.ramadan.medIds.includes(med.id))) {
     times = ramadanMove(times, ramadanTimes(r.ramadan, date));
   }

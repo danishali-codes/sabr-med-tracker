@@ -122,7 +122,8 @@ export function buildReview(opts: {
   const missedByPart = new Map<string, number>();
   for (const d of opts.dueDoses) {
     if (d.date < range.from || d.date > to) continue;
-    if (logs.has(d.slot)) continue;
+    const st = logs.get(d.slot)?.status;
+    if (st === 'taken' || st === 'skipped') continue;
     const label = partOfDay(d.time);
     missedByPart.set(label, (missedByPart.get(label) ?? 0) + 1);
   }
