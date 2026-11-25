@@ -1,0 +1,28 @@
+--------- beginning of crash
+E/AndroidRuntime(  843): FATAL EXCEPTION: main
+E/AndroidRuntime(  843): Process: com.android.systemui, PID: 843
+E/AndroidRuntime(  843): java.lang.RuntimeException: Error receiving broadcast Intent { act=android.intent.action.PACKAGE_CHANGED dat=package: flg=0x5000010 (has extras) } in com.android.systemui.recents.OverviewProxyService$2@134d319
+E/AndroidRuntime(  843): 	at android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$0(LoadedApk.java:1810)
+E/AndroidRuntime(  843): 	at android.app.LoadedApk$ReceiverDispatcher$Args.$r8$lambda$gDuJqgxY6Zb-ifyeubKeivTLAwk(Unknown Source:0)
+E/AndroidRuntime(  843): 	at android.app.LoadedApk$ReceiverDispatcher$Args$$ExternalSyntheticLambda0.run(Unknown Source:2)
+E/AndroidRuntime(  843): 	at android.os.Handler.handleCallback(Handler.java:958)
+E/AndroidRuntime(  843): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+E/AndroidRuntime(  843): 	at android.os.Looper.loopOnce(Looper.java:205)
+E/AndroidRuntime(  843): 	at android.os.Looper.loop(Looper.java:294)
+E/AndroidRuntime(  843): 	at android.app.ActivityThread.main(ActivityThread.java:8177)
+E/AndroidRuntime(  843): 	at java.lang.reflect.Method.invoke(Native Method)
+E/AndroidRuntime(  843): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:552)
+E/AndroidRuntime(  843): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:971)
+E/AndroidRuntime(  843): Caused by: java.lang.NullPointerException: Attempt to read from field 'android.content.pm.ServiceInfo android.content.pm.ResolveInfo.serviceInfo' on a null object reference in method 'void com.android.systemui.recents.OverviewProxyService$2.onReceive(android.content.Context, android.content.Intent)'
+E/AndroidRuntime(  843): 	at com.android.systemui.recents.OverviewProxyService$2.onReceive(go/retraceme 19693c2b0a8439b7183751b64d60893829dbf56dc1e08e0669fc0cfc55754948:44)
+E/AndroidRuntime(  843): 	at android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$0(LoadedApk.java:1802)
+E/AndroidRuntime(  843): 	... 10 more
+--------- beginning of main
+I/ReactNativeJS( 5015): Running "main"
+I/ReactNativeJS( 5015): Running "main"
+I/ReactNativeJS( 5015): Running "main"
+I/ReactNativeJS( 5015): Running "main"
+I/ReactNativeJS(21392): Running "main"
+I/ReactNativeJS(21392): Running "main"
+I/ReactNativeJS(21392): Running "main"
+I/ReactNativeJS(21392): Running "main"
