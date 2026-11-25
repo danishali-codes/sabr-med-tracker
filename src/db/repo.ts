@@ -4,6 +4,7 @@ import { isLowStock, normalizeMed } from '../domain/dose';
 import { summarizeDay, trackedFrom, type DaySummary } from '../domain/progress';
 import { getTimeRules, indexLogs, setTimeRules } from '../domain/schedule';
 import { normalizeFeatures, normalizeProfile, type InUse } from '../domain/features';
+import { cleanDashboard } from '../domain/dashboard';
 import { DEFAULT_SETTINGS, type DayNote, type MachineNight, type Reading, type DoseLog, type DoseStatus, type Medication, type Settings } from '../domain/types';
 
 // ---- change notifications so screens refresh after any write ----
@@ -262,6 +263,7 @@ export function getSettings(): Settings {
     tabs: { ...DEFAULT_SETTINGS.tabs, ...(saved.tabs ?? {}) },
     features: normalizeFeatures(saved.features),
     profile: normalizeProfile(saved.profile),
+    dashboard: cleanDashboard(saved.dashboard),
   };
   // Weekday times live on each med; schedules, Ramadan, temporary changes and travel live here.
   setTimeRules({ ramadan: s.ramadan, timeChanges: s.timeChanges, travelMode: s.travelMode, homeTimeZone: s.homeTimeZone, doseSets: s.doseSets });

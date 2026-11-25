@@ -28,7 +28,10 @@ backup backup 2
 routines routines 2
 review review 2
 patterns patterns 2
-health health 2
+settings-health settings/health 2
+metric-sleep metric/sleep 3
+metric-bp metric/bp 2
+metric-steps metric/steps 2
 health-tab wellbeing 3
 schedules sets 2
 mood mood 2

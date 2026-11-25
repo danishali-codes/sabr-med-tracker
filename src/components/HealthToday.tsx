@@ -50,7 +50,7 @@ export function HealthStrip({ day }: { day: HealthDay | null }) {
   const heart = day?.restingHr ?? day?.hrAvg;
   const empty = !day || (day.steps == null && !day.sleepMin && heart == null);
   return (
-    <PressableScale onPress={() => router.push('/health')} style={s.card} accessibilityRole="button" accessibilityLabel="Health today. Open health">
+    <PressableScale onPress={() => router.navigate('/wellbeing')} style={s.card} accessibilityRole="button" accessibilityLabel="Health today. Open health">
       <View style={s.head}>
         <Text style={s.title}>Health today</Text>
         <Ionicons name="chevron-forward" size={18} color={c.faint} />

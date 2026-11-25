@@ -130,7 +130,7 @@ function seed() {
         setupDone: true,
         // A schedule (0.18 onwards) so Today shows one card for medicines taken together.
         ...('doseSets' in s ? { doseSets: [{ id: 'demo-set', name: 'Morning', time: '08:00', days: [], medIds: ['demo-metformin', 'demo-omeprazole', 'demo-vitd'] }] } : {}),
-        features: { ...s.features, supplements: true, mood: true, rewards: true, machines: true, sugarChecks: true, bpChecks: true },
+        features: { ...s.features, supplements: true, mood: true, rewards: true, machines: true, sugarChecks: true, bpChecks: true, healthData: true },
         profile: { ...s.profile, conditions: ['diabetes', 'highBp', 'cholesterol'], diabetesType: 'type2', insulin: false, medsPerDay: '3-5', timesPerDay: 2 },
       });
     }

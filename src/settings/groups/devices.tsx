@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Text } from '../../components/ui';
 import { WatchStatus } from '../../components/WatchStatus';
 import { clearWatch, pushToWatchNow } from '../../wear/sync';
-import { link, toggle, useSettingStyles } from '../rows';
+import { toggle, useSettingStyles } from '../rows';
 import type { SettingsGroup } from '../types';
 
 function Info({ children }: { children: string }) {
@@ -12,12 +12,12 @@ function Info({ children }: { children: string }) {
 
 export const devicesGroup: SettingsGroup = {
   id: 'devices',
-  title: 'Watch, widgets and health',
+  title: 'Watch and widgets',
   icon: 'watch-outline',
-  blurb: 'Home screen widgets, your smartwatch and Samsung Health',
+  blurb: 'Home screen widgets and your smartwatch',
   androidOnly: true,
   summary: (s) =>
-    [s.watchTile ? 'Watch tile on' : null, s.widgetShowNames ? 'Names on widget' : null, s.healthConnect ? 'Health data on' : null].filter(Boolean).join(' · ') ||
+    [s.watchTile ? 'Watch tile on' : null, s.widgetShowNames ? 'Names on widget' : null].filter(Boolean).join(' · ') ||
     null,
   sections: [
     {
@@ -86,22 +86,6 @@ export const devicesGroup: SettingsGroup = {
               ? `On. Today's ring, your next dose time and Taken and Snooze buttons show on a Wear OS watch tile. It goes to your paired watch over Bluetooth; if that's off, Google's watch connection may pass it through its servers, end-to-end encrypted. ${s.showMedNames ? 'Medicine names are included because names are on in Privacy.' : 'Medicine names are left out.'}`
               : "Off. Nothing is sent to your watch apart from reminders. Turn on to see today's progress on a Wear OS tile, such as on a Galaxy Watch.",
           after: ({ settings }) => (settings.watchTile ? <WatchStatus /> : null),
-        }),
-      ],
-    },
-    {
-      title: 'Health data',
-      items: [
-        link({
-          id: 'healthData',
-          feature: 'healthData',
-          title: 'Health data',
-          hint: 'Off. Bring in steps, sleep and heart rate from Samsung Health',
-          keywords: ['samsung health', 'health connect', 'steps', 'sleep', 'heart rate', 'pulse', 'fitness', 'galaxy watch', 'google fit'],
-          androidOnly: true,
-          icon: 'heart-outline',
-          href: '/health',
-          summary: (s) => (s.healthConnect ? 'Reading steps, sleep and heart rate from Health Connect' : null),
         }),
       ],
     },
