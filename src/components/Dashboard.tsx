@@ -133,7 +133,7 @@ export function MetricCard({
     >
       <View style={s.head}>
         <Ionicons name={info.icon as keyof typeof Ionicons.glyphMap} size={16} color={color} />
-        <Text style={s.title} numberOfLines={1}>
+        <Text style={s.title} numberOfLines={2}>
           {info.title}
         </Text>
         <Ionicons name="chevron-forward" size={16} color={c.faint} />
@@ -231,8 +231,8 @@ const useStyles = makeStyles((c) => ({
   dates: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
   dateBox: { flexGrow: 1, flexBasis: 150 },
   card: { flexGrow: 1, flexBasis: 150, backgroundColor: c.card, borderRadius: 24, padding: 14, minHeight: 128 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { flex: 1, fontSize: 14, fontWeight: '800', color: c.text },
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  title: { flex: 1, fontSize: 14, fontWeight: '800', color: c.text, lineHeight: 18 },
   statLabel: { fontSize: 12, fontWeight: '700', color: c.muted, marginTop: 8 },
   value: { fontSize: 24, fontWeight: '900', color: c.text, marginTop: 2 },
   unit: { fontSize: 12, fontWeight: '700', color: c.muted },
