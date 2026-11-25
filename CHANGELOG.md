@@ -21,6 +21,7 @@ The Health tab is now a dashboard of your health data, and the Samsung Health sw
 - Read health data (Samsung Health through Health Connect), what Sabr is allowed to read, and how to share from Samsung Health are now in Settings, Health data. The Health tab shows the data instead.
 - Settings, Health data can also reset the Health tab's cards.
 - Watch, widgets and health is now Watch and widgets.
+
 ## 0.19
 
 Schedules now really move your doses, an honest "I didn't take it", and charts that fit the screen.
