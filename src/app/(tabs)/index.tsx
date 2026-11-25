@@ -12,7 +12,7 @@ import { Screen } from '../../components/Screen';
 import { Button, Card, FadeIn, PressableScale, Ring, Rings, SectionTitle, Text } from '../../components/ui';
 import { addDays, diffDays, formatDateLong, formatTime, parseDateKey, timeFromDate, weekdayOf } from '../../domain/dates';
 import { describeDose } from '../../domain/dose';
-import { adherence, isGoldDay } from '../../domain/progress';
+import { adherence, isAnswered, isGoldDay } from '../../domain/progress';
 import { routineAt } from '../../domain/routines';
 import { describeDays, setsOn } from '../../domain/sets';
 import { askTakenTime } from '../../components/takenTime';
@@ -72,15 +72,16 @@ export default function TodayScreen() {
   const sets = useMemo(() => setsOn(settings.doseSets, [...doses, ...suppDoses], today), [settings.doseSets, doses, suppDoses, today]);
   const inSet = new Set(sets.flatMap((x) => x.doses.map((d) => d.slot)));
   const openSets = sets.map((x) => ({ ...x, open: x.doses.filter((d) => !logs.has(d.slot)) })).filter((x) => x.open.length > 0);
-  // Doses still to take stay up top, grouped by time; taken and skipped ones fold into "Done today".
+  // Doses still to take stay up top, grouped by time; taken, skipped and missed ones fold into "Done today".
   const groups = groupByTime(doses.filter((d) => !logs.has(d.slot) && !inSet.has(d.slot)));
   const suppOpen = suppDoses.filter((d) => !logs.has(d.slot) && !inSet.has(d.slot));
   const doneDoses = allDoses.filter((d) => logs.has(d.slot) && !isMachine(medById.get(d.medId)) && !isCheck(medById.get(d.medId))).sort((a, b) => a.time.localeCompare(b.time));
-  const suppDone = suppDoses.filter((d) => logs.has(d.slot)).length;
+  const suppDone = suppDoses.filter((d) => isAnswered(logs.get(d.slot))).length;
   const machineDone = machineDoses.filter((d) => logs.has(d.slot)).length;
   const checkDone = checkDoses.filter((d) => logs.has(d.slot)).length;
   const asNeeded = meds.filter((m) => !m.archived && !isMachine(m) && !isCheck(m) && m.schedule.pattern.kind === 'asNeeded');
-  const answered = doses.filter((d) => logs.has(d.slot)).length;
+  // Taken or skipped. A dose marked "I didn't take it" is closed but never counts as done.
+  const answered = doses.filter((d) => isAnswered(logs.get(d.slot))).length;
   const taken = doses.filter((d) => logs.get(d.slot)?.status === 'taken');
   const onTime = taken.filter((d) => punctuality(d, new Date(logs.get(d.slot)!.at), settings.onTimeWindowMinutes) === 'onTime').length;
   const now = new Date();

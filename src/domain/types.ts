@@ -80,8 +80,8 @@ export const FOOD_RULES: { value: FoodRule; label: string }[] = [
 
 /**
  * A saved set of medicines you take together, e.g. "Work days" at 07:00 on Mon to Thu. On those
- * days Today shows them in one card with Take all, so they can be marked in one go. It doesn't
- * change any reminder times (routines do that).
+ * days each member's nearest dose moves to the set's time (reminders too, see applySets), and
+ * Today shows them in one card with Take all. Other days keep the medicine's own times.
  */
 export interface DoseSet {
   id: string;
@@ -245,7 +245,11 @@ export interface MachineNight {
   note?: string;
 }
 
-export type DoseStatus = 'taken' | 'skipped';
+/**
+ * taken; skipped = left out on purpose (neutral for the streak); missed = "I didn't take it",
+ * a dose you know you missed. It stops the reminders but counts as missed, like a dose never answered.
+ */
+export type DoseStatus = 'taken' | 'skipped' | 'missed';
 
 /** A recorded dose. The slot identifies which scheduled dose it answers. */
 export interface DoseLog {

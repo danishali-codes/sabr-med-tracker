@@ -14,7 +14,8 @@ export interface CareDose {
   due: string;
   label: string;
   dose: string;
-  status: 'taken' | 'skipped' | 'open';
+  /** missed = they marked it "I didn't take it". */
+  status: 'taken' | 'skipped' | 'missed' | 'open';
   /** When it was answered (ISO). */
   at?: string;
 }

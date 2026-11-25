@@ -21,6 +21,25 @@ The Health tab is now a dashboard of your health data, and the Samsung Health sw
 - Read health data (Samsung Health through Health Connect), what Sabr is allowed to read, and how to share from Samsung Health are now in Settings, Health data. The Health tab shows the data instead.
 - Settings, Health data can also reset the Health tab's cards.
 - Watch, widgets and health is now Watch and widgets.
+## 0.19
+
+Schedules now really move your doses, an honest "I didn't take it", and charts that fit the screen.
+
+### Schedules move your doses
+- A schedule now changes the time itself. On its days, each medicine in it has its nearest dose moved to the schedule's time, and the reminder moves with it. On other days the medicine keeps its own times.
+- Example: Metformin is set for 8:00, and "Work days" is 7:00 on Monday to Thursday. Monday to Thursday it's due (and reminds you) at 7:00; Friday to Sunday at 8:00.
+- A medicine in two schedules gives each one its own dose. Ramadan times and temporary time changes still come first.
+- Removing a schedule puts the medicines back on their own times.
+
+### I didn't take it
+- Tap a dose and pick "I didn't take it" when you know you missed it. Unlike Skip, which is on purpose and never counts against you, this counts as a missed dose: the day uses a freeze or breaks the streak, the same as a dose never ticked.
+- It stops the reminders for that dose and shows "Missed" in red. Changed your mind? Pick Taken or Undo.
+- The evening "still not taken" reminder now has Taken, Didn't take and Snooze buttons.
+- Reports, patterns, the watch and anyone following your doses count it as missed.
+
+### Charts
+- The mood chart no longer runs off the right side of the screen. It fits the card on any phone and text size.
+- Sleep and CPAP bars shrink to fit on narrow screens, so 30 nights stay inside the card.
 
 ## 0.18
 

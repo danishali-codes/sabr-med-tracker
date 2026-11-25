@@ -122,7 +122,8 @@ export function buildReview(opts: {
   const missedByPart = new Map<string, number>();
   for (const d of opts.dueDoses) {
     if (d.date < range.from || d.date > to) continue;
-    if (logs.has(d.slot)) continue;
+    const st = logs.get(d.slot)?.status;
+    if (st === 'taken' || st === 'skipped') continue;
     const label = partOfDay(d.time);
     missedByPart.set(label, (missedByPart.get(label) ?? 0) + 1);
   }
@@ -295,7 +296,7 @@ export function findPatterns(opts: {
       const slots = med.schedule.times.map((t) => logs.get(slotKey(med.id, d, t)));
       if (slots.length === 0) continue;
       if (slots.every((x) => x?.status === 'taken')) taken.push(n.mood);
-      else if (slots.some((x) => !x)) missed.push(n.mood);
+      else if (slots.some((x) => !x || x.status === 'missed')) missed.push(n.mood);
     }
     if (taken.length >= MIN_DAYS && missed.length >= 3) {
       const diff = avg(taken) - avg(missed);

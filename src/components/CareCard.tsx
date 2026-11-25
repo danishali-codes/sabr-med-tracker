@@ -32,15 +32,26 @@ export function CareCard({ person, graceMinutes }: { person: Followed; graceMinu
       {doses.length === 0 ? <Text style={s.meta}>No doses today.</Text> : null}
       {doses.map((d, i) => {
         const late = d.status === 'open' && new Date(d.due).getTime() + graceMinutes * 60_000 <= now;
-        const icon = d.status === 'taken' ? 'checkmark-circle' : d.status === 'skipped' ? 'remove-circle-outline' : late ? 'alert-circle' : 'ellipse-outline';
-        const color = d.status === 'taken' ? c.good : late ? c.bad : c.faint;
+        const icon =
+          d.status === 'taken'
+            ? 'checkmark-circle'
+            : d.status === 'skipped'
+              ? 'remove-circle-outline'
+              : d.status === 'missed'
+                ? 'close-circle'
+                : late
+                  ? 'alert-circle'
+                  : 'ellipse-outline';
+        const color = d.status === 'taken' ? c.good : late || d.status === 'missed' ? c.bad : c.faint;
         const when = formatTime(timeFromDate(new Date(d.due)));
         const what =
           d.status === 'taken' && d.at
             ? `Taken at ${formatTime(timeFromDate(new Date(d.at)))}`
             : d.status === 'skipped'
               ? 'Skipped'
-              : late
+              : d.status === 'missed'
+                ? 'Missed'
+                : late
                 ? 'Not marked yet'
                 : 'Coming up';
         return (

@@ -34,3 +34,4 @@ metric-bp metric/bp 2
 metric-steps metric/steps 2
 health-tab wellbeing 3
 schedules sets 2
+mood mood 2

@@ -32,6 +32,7 @@ final class TileLayout {
     static final int GOOD = 0xFF3DD9A0;
     static final int TRACK = 0xFF2B2640;
     static final int SKIPPED = 0xFF5C5677;
+    static final int BAD = 0xFFFF6B85;
     static final int TEXT = 0xFFFFFFFF;
     static final int FAINT = 0xFFB9B3CF;
     static final int ON_PRIMARY = 0xFF140F2B;
@@ -178,7 +179,8 @@ final class TileLayout {
         float seg = (360f - gapDeg * n) / n;
         for (Today.Mark m : today.marks) {
             int color;
-            if (finished) color = m.state.equals("skipped") ? SKIPPED : GOOD;
+            if (m.state.equals("missed")) color = BAD;
+            else if (finished) color = m.state.equals("skipped") ? SKIPPED : GOOD;
             else if (m.state.equals("taken")) color = PRIMARY;
             else if (m.state.equals("skipped")) color = SKIPPED;
             else color = TRACK;

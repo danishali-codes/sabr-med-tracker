@@ -265,13 +265,13 @@ export function getSettings(): Settings {
     profile: normalizeProfile(saved.profile),
     dashboard: cleanDashboard(saved.dashboard),
   };
-  // Weekday times live on each med; Ramadan, temporary changes and travel live here.
-  setTimeRules({ ramadan: s.ramadan, timeChanges: s.timeChanges, travelMode: s.travelMode, homeTimeZone: s.homeTimeZone });
+  // Weekday times live on each med; schedules, Ramadan, temporary changes and travel live here.
+  setTimeRules({ ramadan: s.ramadan, timeChanges: s.timeChanges, travelMode: s.travelMode, homeTimeZone: s.homeTimeZone, doseSets: s.doseSets });
   return s;
 }
 
 export function saveSettings(s: Settings) {
-  setTimeRules({ ramadan: s.ramadan, timeChanges: s.timeChanges, travelMode: s.travelMode, homeTimeZone: s.homeTimeZone });
+  setTimeRules({ ramadan: s.ramadan, timeChanges: s.timeChanges, travelMode: s.travelMode, homeTimeZone: s.homeTimeZone, doseSets: s.doseSets });
   // Finished days keep their summaries; a new on-time window applies from today on.
   getDb().runSync('INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)', 'settings', JSON.stringify(s));
   changed();
