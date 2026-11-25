@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import type { DashboardData, DashboardSettings, MetricId } from '../domain/dashboard';
 import { metricInfo } from '../domain/dashboard';
@@ -45,15 +45,19 @@ export function useDashboardData(from: DateKey, to: DateKey): { data: DashboardD
   const healthOn = healthReadOn(settings);
   const [health, setHealth] = useState<{ key: string; days: HealthDay[] } | null>(null);
   const key = `${from}~${to}`;
+  // Only the latest read counts: one for older dates that finishes late is thrown away.
+  const latest = useRef(0);
 
   const load = useCallback(() => {
+    const run = ++latest.current;
     if (!healthOn) {
       setHealth({ key, days: [] });
       return;
     }
+    const done = (days: HealthDay[]) => run === latest.current && setHealth({ key, days });
     readHealth(from, to)
-      .then((days) => setHealth({ key, days }))
-      .catch(() => setHealth({ key, days: [] }));
+      .then(done)
+      .catch(() => done([]));
   }, [healthOn, from, to, key]);
 
   useFocusEffect(

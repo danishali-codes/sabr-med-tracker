@@ -205,7 +205,8 @@ export function metricPoints(id: MetricId, data: DashboardData, from: DateKey, t
       }
       break;
     case 'cpap':
-      for (const n of data.cpap) if (inRange(n.date, from, to) && n.hours > 0) out.push({ date: n.date, value: n.hours });
+      // A night recorded as 0 hours counts; nights with no hours known aren't in data.cpap at all.
+      for (const n of data.cpap) if (inRange(n.date, from, to) && n.hours >= 0) out.push({ date: n.date, value: n.hours });
       break;
   }
   return out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));

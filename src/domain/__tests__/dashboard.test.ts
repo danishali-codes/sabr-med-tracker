@@ -130,3 +130,12 @@ describe('moveCard', () => {
     expect(moveCard([...cards], 'meds', -1)).toEqual([...cards]);
   });
 });
+
+describe('cpap', () => {
+  it('counts a night recorded as 0 hours', () => {
+    const d: DashboardData = { ...empty, cpap: [{ date: '2026-11-23', hours: 0 }, { date: '2026-11-24', hours: 8 }] };
+    const p = metricPoints('cpap', d, '2026-11-19', today);
+    expect(summarize('cpap', p, 'avg').value).toBe(4);
+    expect(summarize('cpap', p, 'min').value).toBe(0);
+  });
+});
