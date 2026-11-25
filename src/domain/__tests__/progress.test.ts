@@ -179,5 +179,9 @@ describe("I didn't take it (missed)", () => {
     const logs = indexLogs([miss('a', '2026-11-04', '08:00')]);
     expect(medDays(meds[0], logs, '2026-11-04', 1)).toEqual([{ date: '2026-11-04', mark: 'missed' }]);
     expect(medStreak(meds[0], indexLogs([miss('a', '2026-11-03', '08:00'), miss('a', '2026-11-03', '20:00')]), '2026-11-04')).toBe(0);
+    // A streak through yesterday ends as soon as today's dose is marked missed.
+    const done = ['2026-11-02', '2026-11-03'].flatMap((d) => [take('a', d, '08:00', local(d, 8)), take('a', d, '20:00', local(d, 20))]);
+    expect(medStreak(meds[0], indexLogs(done), '2026-11-04')).toBe(2);
+    expect(medStreak(meds[0], indexLogs([...done, miss('a', '2026-11-04', '08:00')]), '2026-11-04')).toBe(0);
   });
 });

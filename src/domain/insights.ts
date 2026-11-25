@@ -296,7 +296,7 @@ export function findPatterns(opts: {
       const slots = med.schedule.times.map((t) => logs.get(slotKey(med.id, d, t)));
       if (slots.length === 0) continue;
       if (slots.every((x) => x?.status === 'taken')) taken.push(n.mood);
-      else if (slots.some((x) => !x)) missed.push(n.mood);
+      else if (slots.some((x) => !x || x.status === 'missed')) missed.push(n.mood);
     }
     if (taken.length >= MIN_DAYS && missed.length >= 3) {
       const diff = avg(taken) - avg(missed);

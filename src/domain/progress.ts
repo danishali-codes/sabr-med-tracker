@@ -246,9 +246,10 @@ export function medStreak(med: Medication, logs: Map<string, DoseLog>, today: Da
     const date = addDays(today, -i);
     if (diffDays(trackedFrom(med), date) < 0) break;
     if (!isMedDueOn(med, date)) continue;
-    const answered = med.schedule.times.every((t) => isAnswered(logs.get(slotKey(med.id, date, t))));
-    if (answered) n++;
-    else if (i === 0) continue; // today still in progress
+    const slots = med.schedule.times.map((t) => logs.get(slotKey(med.id, date, t)));
+    if (slots.every(isAnswered)) n++;
+    // Today is still in progress, unless a dose was marked "I didn't take it".
+    else if (i === 0 && !slots.some((l) => l?.status === 'missed')) continue;
     else break;
   }
   return n;
