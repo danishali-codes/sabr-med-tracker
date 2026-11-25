@@ -300,7 +300,7 @@ export function formatMetric(id: MetricId, v: number, v2?: number | null, opts: 
     case 'bp':
       return `${Math.round(v)}/${Math.round(v2 ?? 0)}`;
     case 'cpap':
-      return formatSleep(v * 60);
+      return v <= 0 ? '0h' : formatSleep(v * 60);
   }
 }
 
