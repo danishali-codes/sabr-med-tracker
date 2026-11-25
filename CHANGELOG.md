@@ -6,6 +6,26 @@ every screen, light and dark, are in [docs/screenshots](docs/screenshots).
 <!-- Each "## x.y" heading becomes a release named vx.y.0. "commit:" pins the release to
      an older commit; without it the release points at the merge that added the heading. -->
 
+## 0.19
+
+Schedules now really move your doses, an honest "I didn't take it", and charts that fit the screen.
+
+### Schedules move your doses
+- A schedule now changes the time itself. On its days, each medicine in it has its nearest dose moved to the schedule's time, and the reminder moves with it. On other days the medicine keeps its own times.
+- Example: Metformin is set for 8:00, and "Work days" is 7:00 on Monday to Thursday. Monday to Thursday it's due (and reminds you) at 7:00; Friday to Sunday at 8:00.
+- A medicine in two schedules gives each one its own dose. Ramadan times and temporary time changes still come first.
+- Removing a schedule puts the medicines back on their own times.
+
+### I didn't take it
+- Tap a dose and pick "I didn't take it" when you know you missed it. Unlike Skip, which is on purpose and never counts against you, this counts as a missed dose: the day uses a freeze or breaks the streak, the same as a dose never ticked.
+- It stops the reminders for that dose and shows "Missed" in red. Changed your mind? Pick Taken or Undo.
+- The evening "still not taken" reminder now has Taken, Didn't take and Snooze buttons.
+- Reports, patterns, the watch and anyone following your doses count it as missed.
+
+### Charts
+- The mood chart no longer runs off the right side of the screen. It fits the card on any phone and text size.
+- Sleep and CPAP bars shrink to fit on narrow screens, so 30 nights stay inside the card.
+
 ## 0.18
 
 New tabs, schedules for medicines you take together, and fixing the time of a dose afterwards.

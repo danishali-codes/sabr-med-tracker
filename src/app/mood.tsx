@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { PageScroll } from '../components/Screen';
 import { Card, FadeIn, PressableScale, SectionTitle, Text } from '../components/ui';
@@ -156,8 +156,9 @@ function Stat({ label, value, sub, color }: { label: string; value: string; sub:
 
 function MoodChart({ trend }: { trend: MoodTrend }) {
   const c = useTheme();
-  const { width: screen } = useWindowDimensions();
-  const width = Math.max(220, screen - 32 - 40);
+  // Sized to the space the card actually leaves (after its padding and the mood labels), so
+  // the chart never runs off the right edge, whatever the screen width or text size.
+  const [width, setWidth] = useState(0);
   const height = 150;
   const pad = 8;
   const span = Math.max(1, diffDays(trend.from, trend.to));
@@ -179,13 +180,15 @@ function MoodChart({ trend }: { trend: MoodTrend }) {
 
   return (
     <View style={{ flexDirection: 'row', marginTop: 16 }}>
-      <View style={{ width: 40, height, justifyContent: 'space-between', paddingVertical: pad - 7 }}>
+      <View style={{ minWidth: 40, maxWidth: 64, marginRight: 4, height, justifyContent: 'space-between', paddingVertical: pad - 7 }}>
         {[5, 3, 1].map((m) => (
           <Text key={m} style={{ fontSize: 11, fontWeight: '700', color: c.muted }}>
             {MOODS[m - 1].label}
           </Text>
         ))}
       </View>
+      <View style={{ flex: 1, height }} onLayout={(e) => setWidth(Math.floor(e.nativeEvent.layout.width))}>
+      {width > 0 ? (
       <Svg width={width} height={height}>
         {[1, 2, 3, 4, 5].map((m) => (
           <Line key={m} x1={pad} x2={width - pad} y1={y(m)} y2={y(m)} stroke={c.border} strokeWidth={1} />
@@ -195,6 +198,8 @@ function MoodChart({ trend }: { trend: MoodTrend }) {
         ))}
         {d ? <Path d={d} stroke={c.primary} strokeWidth={3} fill="none" strokeLinejoin="round" strokeLinecap="round" /> : null}
       </Svg>
+      ) : null}
+      </View>
     </View>
   );
 }

@@ -35,6 +35,8 @@ export function DoseRow({
   const pop = useRef(new Animated.Value(1)).current;
   const taken = log?.status === 'taken';
   const skipped = log?.status === 'skipped';
+  // "I didn't take it": an honest miss, unlike Skip, which is on purpose and neutral.
+  const missed = log?.status === 'missed';
 
   const prev = useRef(taken);
   useEffect(() => {
@@ -83,6 +85,9 @@ export function DoseRow({
       ? [{ label: 'Add hours and notes', icon: 'create-outline' as const, onPress: () => router.push({ pathname: '/machine/night', params: { id: med.id, date: dose.date } }) }]
       : []),
     ...(!skipped ? [{ label: check ? 'Not today' : machine ? "Didn't use it" : 'Skip this dose', icon: 'remove-circle-outline' as const, onPress: skip }] : []),
+    ...(!missed && !check && !machine
+      ? [{ label: "I didn't take it", icon: 'close-circle-outline' as const, onPress: () => logDose(dose, 'missed') }]
+      : []),
     ...(log ? [{ label: 'Undo', icon: 'arrow-undo-outline' as const, onPress: undo, destructive: true }] : []),
   ];
 
@@ -111,10 +116,12 @@ export function DoseRow({
     status = { text: `${word} at ${formatTime(timeFromDate(new Date(log!.at)))}`, color: p === 'onTime' ? c.good : c.warn };
   } else if (skipped) {
     status = { text: 'Skipped', color: c.muted };
+  } else if (missed) {
+    status = { text: 'Missed', color: c.bad };
   }
 
   return (
-    <Pressable onPress={options} onLongPress={options} style={[s.row, log && { opacity: skipped ? 0.55 : 0.92 }]} delayLongPress={300}>
+    <Pressable onPress={options} onLongPress={options} style={[s.row, log && { opacity: skipped ? 0.55 : missed ? 0.8 : 0.92 }]} delayLongPress={300}>
       {med.photo ? <Image source={{ uri: med.photo }} style={s.photo} accessibilityLabel={`Photo of ${med.name}`} /> : <MedIcon med={med} />}
       <View style={{ flex: 1 }}>
         <Text style={[s.name, taken && s.nameDone]} numberOfLines={1}>
@@ -130,11 +137,23 @@ export function DoseRow({
         <Animated.View
           style={[
             s.check,
-            taken ? { backgroundColor: c.good, borderColor: c.good } : skipped ? { backgroundColor: c.sunken, borderColor: c.sunken } : { borderColor: med.color },
+            taken
+              ? { backgroundColor: c.good, borderColor: c.good }
+              : skipped
+                ? { backgroundColor: c.sunken, borderColor: c.sunken }
+                : missed
+                  ? { backgroundColor: c.sunken, borderColor: c.bad }
+                  : { borderColor: med.color },
             { transform: [{ scale: pop }] },
           ]}
         >
-          {taken ? <Ionicons name="checkmark" size={24} color="#fff" /> : skipped ? <Ionicons name="remove" size={22} color={c.muted} /> : null}
+          {taken ? (
+            <Ionicons name="checkmark" size={24} color="#fff" />
+          ) : skipped ? (
+            <Ionicons name="remove" size={22} color={c.muted} />
+          ) : missed ? (
+            <Ionicons name="close" size={22} color={c.bad} />
+          ) : null}
         </Animated.View>
       </Pressable>
       <ActionSheet

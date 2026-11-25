@@ -169,3 +169,39 @@ describe('review fixes', () => {
     expect(back.map((r) => r.at.toISOString())).toEqual([until]);
   });
 });
+
+describe('schedules (dose sets) move dose times', () => {
+  // 2026-11-23 is a Monday, 2026-11-28 a Saturday.
+  const work = { id: 's1', name: 'Work days', time: '07:00', days: [1, 2, 3, 4], medIds: ['a', 'b'] };
+  it('moves the nearest dose to the schedule time on its days only, keeping the dose identity', () => {
+    const a = med('a', ['08:00', '20:00']);
+    expect(timesOn(a, '2026-11-23', rules({ doseSets: [work] }))).toEqual([
+      { base: '08:00', time: '07:00' },
+      { base: '20:00', time: '20:00' },
+    ]);
+    expect(timesOn(a, '2026-11-28', rules({ doseSets: [work] })).map((t) => t.time)).toEqual(['08:00', '20:00']);
+  });
+  it('leaves medicines that are not in the schedule alone', () => {
+    expect(timesOn(med('c', ['08:00']), '2026-11-23', rules({ doseSets: [work] })).map((t) => t.time)).toEqual(['08:00']);
+  });
+  it('gives each schedule its own dose', () => {
+    const evening = { id: 's2', name: 'Evening', time: '21:30', days: [], medIds: ['a'] };
+    const a = med('a', ['08:00', '20:00']);
+    expect(timesOn(a, '2026-11-23', rules({ doseSets: [evening, work] })).map((t) => t.time)).toEqual(['07:00', '21:30']);
+    // One dose, two schedules: the earlier schedule wins it.
+    const one = med('a', ['12:00']);
+    expect(timesOn(one, '2026-11-23', rules({ doseSets: [evening, work] })).map((t) => t.time)).toEqual(['07:00']);
+  });
+  it('reaches dosesOn, so reminders and Today use the schedule time', () => {
+    setTimeRules(rules({ doseSets: [work] }));
+    const [first] = dosesOn([med('b', ['06:30'])], '2026-11-23');
+    expect(first).toEqual({ slot: slotKey('b', '2026-11-23', '06:30'), medId: 'b', date: '2026-11-23', time: '07:00', usualTime: '06:30' });
+  });
+  it('Ramadan still wins over a schedule', () => {
+    const r = rules({
+      doseSets: [{ ...work, days: [] }],
+      ramadan: { ...DEFAULT_SETTINGS.ramadan, enabled: true, mode: 'manual', from: '2026-11-01', to: '2026-11-30', suhoor: '04:30', iftar: '17:45', medIds: null },
+    });
+    expect(timesOn(med('a', ['08:00']), '2026-11-23', r).map((t) => t.time)).toEqual(['04:30']);
+  });
+});

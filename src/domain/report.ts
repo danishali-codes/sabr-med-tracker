@@ -112,7 +112,7 @@ export function buildReport(opts: {
       if (!r) return;
       r.due++;
       day.due++;
-      if (!log) {
+      if (!log || log.status === 'missed') {
         r.missed++;
         day.missed++;
         r.missedDoses.push({ date, time });

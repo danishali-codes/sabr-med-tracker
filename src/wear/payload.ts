@@ -15,12 +15,12 @@ export interface WatchPayload {
   total: number;
   streak: number;
   /** Every dose today in time order: t = time (HH:MM), s = state. Draws the ring. */
-  marks: { t: string; s: 'taken' | 'skipped' | 'open' }[];
+  marks: { t: string; s: 'taken' | 'skipped' | 'missed' | 'open' }[];
   /**
    * Today's full list for the watch app (tap the tile): every dose in time order. `name` only
    * when names are on; otherwise `what` says how much, e.g. "2 tablets".
    */
-  list?: { t: string; label: string; name: string | null; what: string; s: 'taken' | 'skipped' | 'open'; at: string | null }[];
+  list?: { t: string; label: string; name: string | null; what: string; s: 'taken' | 'skipped' | 'missed' | 'open'; at: string | null }[];
   /** Times that still have doses to take, earliest first. */
   open: { time: string; label: string; at: number; count: number; names: string | null; snoozedUntil: number | null }[];
 }
@@ -50,7 +50,8 @@ export function watchPayload(input: {
     v: 1,
     date,
     made: input.now.getTime(),
-    done: sorted.filter((d) => logs.has(d.slot)).length,
+    // Taken or skipped; a dose marked missed leaves the open list but isn't done.
+    done: sorted.filter((d) => { const st = logs.get(d.slot)?.status; return st === 'taken' || st === 'skipped'; }).length,
     total: sorted.length,
     streak: input.streak,
     marks: sorted.map((d) => ({ t: d.time, s: logs.get(d.slot)?.status ?? 'open' })),

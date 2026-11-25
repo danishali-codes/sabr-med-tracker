@@ -14,8 +14,8 @@ android {
     applicationId 'com.danishalicodes.sabrmedicinetracker'
     minSdk 30
     targetSdk 34
-    versionCode 4
-    versionName '0.18.0'
+    versionCode 5
+    versionName '0.19.0'
   }
 
   signingConfigs {

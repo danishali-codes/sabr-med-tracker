@@ -19,9 +19,12 @@ const REFILL_CHANNEL_ID = 'refills-private';
 const CATEGORY_ID = 'dose';
 /** Checks (blood sugar, blood pressure) are answered with a reading in the app, so they only get Snooze. */
 const CHECK_CATEGORY_ID = 'check';
+/** The evening "still not taken" notice: Taken, Didn't take (an honest miss) or Snooze. Skip stays in the app. */
+const MISSED_CATEGORY_ID = 'missed';
 export const ACTION_TAKEN = 'taken';
 export const ACTION_SNOOZE = 'snooze';
 const ACTION_SKIP = 'skip';
+const ACTION_MISSED = 'missed';
 
 // Android allows ~500 alarms per app; iOS keeps only 64 pending notifications.
 const MAX_SCHEDULED = Platform.OS === 'ios' ? 60 : 300;
@@ -30,7 +33,7 @@ const MAX_PART_REMINDERS = 6;
 
 let setupDone = false;
 
-/** Channels and the Taken / Snooze / Skip buttons. Safe to call repeatedly. */
+/** Channels and the Taken / Snooze / Skip (and Didn't take) buttons. Safe to call repeatedly. */
 export async function setupNotifications() {
   if (setupDone) return;
   if (Platform.OS === 'android') {
@@ -58,6 +61,11 @@ export async function setupNotifications() {
     { identifier: ACTION_SNOOZE, buttonTitle: `Snooze ${snooze} min`, options: { opensAppToForeground: false } },
     { identifier: ACTION_SKIP, buttonTitle: 'Skip', options: { opensAppToForeground: false, isDestructive: true } },
   ]);
+  await Notifications.setNotificationCategoryAsync(MISSED_CATEGORY_ID, [
+    { identifier: ACTION_TAKEN, buttonTitle: 'Taken', options: { opensAppToForeground: false } },
+    { identifier: ACTION_MISSED, buttonTitle: "Didn't take", options: { opensAppToForeground: false } },
+    { identifier: ACTION_SNOOZE, buttonTitle: `Snooze ${snooze} min`, options: { opensAppToForeground: false } },
+  ]);
   await Notifications.setNotificationCategoryAsync(CHECK_CATEGORY_ID, [
     { identifier: ACTION_SNOOZE, buttonTitle: `Snooze ${snooze} min`, options: { opensAppToForeground: false } },
   ]);
@@ -77,7 +85,7 @@ function contentFor(r: PlannedReminder, meds: Map<string, Medication>, showNames
       title,
       body,
       data: { date: r.date, time: r.time, medIds: r.medIds, slots: r.slots, group: groupKey(r.date, 'missed') },
-      categoryIdentifier: CATEGORY_ID,
+      categoryIdentifier: MISSED_CATEGORY_ID,
       sound: 'default',
       priority: Notifications.AndroidNotificationPriority.HIGH,
       autoDismiss: true,
@@ -263,7 +271,7 @@ export async function handleReminderAction(actionId: string, rawData: unknown) {
   const data = readData(rawData);
   if (!data) return;
   const group = data.group ?? groupKey(data.date, data.time);
-  if (actionId === ACTION_TAKEN || actionId === ACTION_SKIP) {
+  if (actionId === ACTION_TAKEN || actionId === ACTION_SKIP || actionId === ACTION_MISSED) {
     // The doses as scheduled that day, so each is logged with its own time.
     const meds = repo.getMeds();
     const day = new Map(dosesOn(meds, data.date).map((d) => [d.slot, d]));
@@ -275,7 +283,8 @@ export async function handleReminderAction(actionId: string, rawData: unknown) {
         return day.get(slot) ?? { slot, medId, date: data.date, time: data.time };
       })
       .filter((d) => actionId === ACTION_SKIP || !checks.has(d.medId));
-    await answerDoses(doses, actionId === ACTION_TAKEN ? 'taken' : 'skipped', { group });
+    const status: DoseStatus = actionId === ACTION_TAKEN ? 'taken' : actionId === ACTION_MISSED ? 'missed' : 'skipped';
+    await answerDoses(doses, status, { group });
   } else if (actionId === ACTION_SNOOZE) {
     await snoozeGroup(group);
   }

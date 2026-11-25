@@ -1,6 +1,6 @@
 import { addDays, diffDays, formatTime, timeFromDate, toDateKey, weekdayOf, type DateKey } from '../domain/dates';
 import { describeDose } from '../domain/dose';
-import { adherence, computeProgress, isGoldDay, type DaySummary } from '../domain/progress';
+import { adherence, computeProgress, isAnswered, isGoldDay, type DaySummary } from '../domain/progress';
 import { groupKey } from '../domain/reminders';
 import { dosesOn, dueAt, groupByTime, indexLogs, punctuality } from '../domain/schedule';
 import { countsForStreak, type DoseLog, type Medication, type ScheduledDose, type Settings } from '../domain/types';
@@ -17,7 +17,7 @@ export interface WidgetRow {
   /** The dose under the name; empty when names are hidden (the title already says it). */
   detail: string;
   pill: PillLook;
-  status: 'taken' | 'skipped' | 'open';
+  status: 'taken' | 'skipped' | 'missed' | 'open';
   due: boolean;
   /** The scheduled dose, so a tap on the row logs exactly this one. */
   dose: ScheduledDose;
@@ -90,7 +90,8 @@ export function buildWidgetData({ now, meds, logs: logList, summaries, snoozes, 
   const counted = doses.filter((d) => countsForStreak(byId.get(d.medId)));
   const taken = counted.filter((d) => logs.get(d.slot)?.status === 'taken');
   const onTime = taken.filter((d) => punctuality(d, new Date(logs.get(d.slot)!.at), settings.onTimeWindowMinutes) === 'onTime').length;
-  const done = counted.filter((d) => logs.has(d.slot)).length;
+  // Taken or skipped; a dose marked "I didn't take it" is off the list but never done.
+  const done = counted.filter((d) => isAnswered(logs.get(d.slot))).length;
   const complete = counted.length > 0 && done === counted.length;
 
   let streak = 0;
