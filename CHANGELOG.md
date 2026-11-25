@@ -6,6 +6,22 @@ every screen, light and dark, are in [docs/screenshots](docs/screenshots).
 <!-- Each "## x.y" heading becomes a release named vx.y.0. "commit:" pins the release to
      an older commit; without it the release points at the merge that added the heading. -->
 
+## 0.20
+
+The Health tab is now a dashboard of your health data, and the Samsung Health switch lives in Settings.
+
+### Health dashboard
+- The Health tab shows a card for each kind of data: medicines, steps, sleep, heart rate, mood, blood sugar, blood pressure and CPAP. Cards show when their feature is on.
+- Tap Edit to remove cards, move them up or down, or add more. Adding a card whose feature is off turns that feature on.
+- Pick the dates at the top: today, yesterday, the last 7, 30 or 90 days, this month, or any two dates. Every card follows them.
+- Pick how each card sums up those dates: average, median, lowest, highest, lowest to highest, or total (where a total makes sense, like steps).
+- Tap a card for its own page: average, median, lowest, highest and total side by side, a bar for each day that always fits the screen, and every day or reading listed. Sleep and CPAP pages also show sleep next to CPAP use. The medicines card opens the Medicine tab.
+
+### Settings
+- Read health data (Samsung Health through Health Connect), what Sabr is allowed to read, and how to share from Samsung Health are now in Settings, Health data. The Health tab shows the data instead.
+- Settings, Health data can also reset the Health tab's cards.
+- Watch, widgets and health is now Watch and widgets.
+
 ## 0.18
 
 New tabs, schedules for medicines you take together, and fixing the time of a dose afterwards.

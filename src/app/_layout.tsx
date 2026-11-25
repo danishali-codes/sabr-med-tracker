@@ -127,6 +127,7 @@ export default function RootLayout() {
             <Stack.Screen name="review" options={{ title: 'In review' }} />
             <Stack.Screen name="patterns" options={{ title: 'Patterns' }} />
             <Stack.Screen name="health" options={{ title: 'Health data' }} />
+            <Stack.Screen name="metric/[id]" options={{ title: 'Health' }} />
             <Stack.Screen name="mood" options={{ title: 'Mood trend' }} />
             <Stack.Screen name="setup" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
             <Stack.Screen name="profile" options={{ title: 'Health profile' }} />

@@ -1,4 +1,5 @@
 import { DEFAULT_FEATURES, EMPTY_PROFILE, type FeatureFlags, type HealthProfile } from './features';
+import { DEFAULT_DASHBOARD, type DashboardSettings } from './dashboard';
 import type { DateKey, TimeOfDay } from './dates';
 
 export type SchedulePattern =
@@ -358,6 +359,8 @@ export interface Settings {
   sugarUnit: 'mgdl' | 'mmol';
   /** Setup (or, after updating, the one-time "choose your features" screen) has been finished or skipped. */
   setupDone: boolean;
+  /** The Health tab's cards, their order, and the dates and stat it shows. */
+  dashboard: DashboardSettings;
 }
 
 export interface AutoBackupSettings {
@@ -440,6 +443,7 @@ export const DEFAULT_SETTINGS: Settings = {
   profile: EMPTY_PROFILE,
   sugarUnit: 'mgdl',
   setupDone: false,
+  dashboard: DEFAULT_DASHBOARD,
 };
 
 /** How the day went: a mood from 1 (awful) to 5 (great), symptom tags and free text. */
